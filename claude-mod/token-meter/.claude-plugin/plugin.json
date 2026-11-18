@@ -1,0 +1,6 @@
+{
+  "name": "token-meter",
+  "version": "0.2.0",
+  "description": "Token meter: a small corner pane with session, task and limit usage, synced to the Token Dashboard app",
+  "types": "./types/index.d.ts"
+}
