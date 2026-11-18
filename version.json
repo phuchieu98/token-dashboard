@@ -1,11 +1,9 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "date": "2026-11-18",
   "notes": [
-    "Đăng nhập bằng tài khoản + mật khẩu hoặc tài khoản Google",
-    "Nút người dùng ở góc phải: đổi tên, chọn ảnh đại diện",
-    "Chu kỳ tuần: token và thời gian chat còn dùng được",
-    "Mục Đặt lại & dùng lại, gợi ý chọn model",
-    "Tự báo khi có bản cập nhật mới"
+    "Đặt tên hiển thị riêng thay cho tên Gmail hoặc tên đăng nhập",
+    "Mục Hồ sơ mới trong menu chữ T",
+    "Tên hiển thị dùng ở mọi nơi trong app và cửa sổ treo góc"
   ]
 }

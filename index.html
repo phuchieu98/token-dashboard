@@ -162,6 +162,9 @@
   .drawer .foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 
   .view[hidden] { display: none; }
+  .nrow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nrow input.f { flex: 1; min-width: 160px; width: auto; }
+  .namecard { border-color: var(--accent); }
   .mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
   .rs { padding: 8px 0; border-bottom: 1px solid var(--line); }
   .rs:last-child { border-bottom: 0; }
@@ -287,6 +290,7 @@
   </div>
   <button class="nav" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>Trang chủ</button>
   <button class="nav" data-go="theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><circle cx="8.5" cy="9" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="15.5" cy="9" r="1"/></svg>Cài đặt giao diện</button>
+  <button class="nav" data-go="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>Hồ sơ</button>
   <button class="nav" data-go="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 11h6M19 8v6"/></svg>Liên kết tài khoản</button>
   <button class="nav" data-go="download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Tải xuống</button>
   <button class="nav" data-go="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>Thông tin app &amp; tác giả</button>
@@ -327,6 +331,13 @@
       <div class="hint center" id="loginNote2"></div>
       <div class="actions center" id="loginCancelWrap" hidden><button class="btn" type="button" id="loginCancel">Huỷ</button></div>
     </form>
+
+    <div class="card namecard" id="namePrompt" hidden>
+      <h2>Đặt tên hiển thị</h2>
+      <div class="sub" style="margin-bottom:8px">Tên này hiện trong app thay cho <span id="nameFrom">tên đăng nhập</span>.</div>
+      <div class="nrow"><input class="f" id="nameFirst" maxlength="40" placeholder="Ví dụ: Hiếu"><button class="btn primary" id="nameFirstSave">Lưu tên</button><button class="btn" id="nameFirstSkip">Để sau</button></div>
+      <div class="hint" id="nameFirstNote"></div>
+    </div>
 
     <div class="card" id="linkPrompt" hidden>
       <h2>Chưa liên kết tài khoản Claude</h2>
@@ -442,6 +453,21 @@
 
   <!-- ===== Liên kết tài khoản ===== -->
   <section class="view" data-view="accounts" hidden>
+    <div class="card" id="profileCard">
+      <h2>Hồ sơ</h2>
+      <div id="profileGuest" class="empty">Đăng nhập để đặt tên hiển thị và ảnh đại diện.</div>
+      <div id="profileBody">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:6px">
+          <span class="av big-av" id="avCard"></span>
+          <div style="min-width:0"><b id="cardName">—</b><div class="sub" id="cardLogin"></div></div>
+        </div>
+        <label class="f" for="nameCard">Tên hiển thị</label>
+        <div class="nrow"><input class="f" id="nameCard" maxlength="40" placeholder="Tên bạn muốn hiện trong app"><button class="btn primary" id="nameCardSave">Lưu</button></div>
+        <div class="hint">Để trống rồi Lưu để quay về tên đăng nhập. Ảnh đại diện: bấm vào tên ở góc phải trên.</div>
+        <div class="hint" id="nameCardNote"></div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>1 · Tài khoản đã đăng nhập</h2>
       <div id="sessList" class="empty">Chưa đăng nhập.</div>
@@ -578,7 +604,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.1';
+  var APP_VERSION = '1.5.2';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
   // The same Apps Script deployed a second time as "Execute as: User accessing" — it reads the visitor's Google account.
   var DEFAULT_LOGIN_URL = 'https://script.google.com/macros/s/AKfycbxfSbGgeKFixSZXJ4mLa0AW-fI3I-MHE2OkKseFWk3PlGD7pTzZY7gFZPQjyvtGtT7O/exec';
@@ -689,6 +715,13 @@
     $('menuBtn').setAttribute('aria-expanded', on ? 'true' : 'false');
   }
   function go(view) {
+    if (view === 'profile') {
+      go('accounts');
+      $$('.nav').forEach(function (n) { n.classList.toggle('on', n.dataset.go === 'profile'); });
+      $('pageTitle').textContent = 'Hồ sơ';
+      setTimeout(function () { $('nameCard').focus(); }, 60);
+      return;
+    }
     $$('.view').forEach(function (v) { v.hidden = v.dataset.view !== view; });
     $$('.nav').forEach(function (n) { n.classList.toggle('on', n.dataset.go === view); });
     $('pageTitle').textContent = VIEW_TITLES[view] || 'Token Dashboard';
@@ -996,7 +1029,8 @@
     $('sessList').className = list.length ? '' : 'empty';
     $('sessList').innerHTML = list.length ? list.map(function (s, i) {
       var on = s.token === cur;
-      return '<div class="sess"><div class="who"><b>' + esc(s.account) + '</b>' + (on ? ' <span class="status run">đang dùng</span>' : '') + '</div>' +
+      var label = on && me && me.name ? esc(me.name) + ' <span class="sub">· ' + esc(s.account) + '</span>' : esc(s.account);
+      return '<div class="sess"><div class="who"><b>' + label + '</b>' + (on ? ' <span class="status run">đang dùng</span>' : '') + '</div>' +
         (on ? '' : '<button class="btn" data-use="' + i + '">Chuyển sang</button>') +
         '<button class="btn danger" data-drop="' + i + '">' + (on ? 'Đăng xuất' : 'Gỡ') + '</button></div>';
     }).join('') : 'Chưa đăng nhập tài khoản Google nào.';
@@ -1149,6 +1183,21 @@
     $('popEmail').textContent = !m ? 'chưa đăng nhập' : m.kind === 'password' ? 'Tài khoản: ' + m.email.slice(2) : 'Google: ' + m.email;
     $('popSigned').hidden = !m; $('popGuest').hidden = !!m;
     if (m && document.activeElement !== $('nameIn')) $('nameIn').value = m.name || '';
+    // Profile card (Hồ sơ) and the first-time "set a display name" card.
+    var loginName = !m ? '' : m.kind === 'password' ? m.email.slice(2) : m.email;
+    $('profileGuest').hidden = !!m; $('profileBody').hidden = !m;
+    if (m) {
+      paintAvatar($('avCard'), m);
+      $('cardName').textContent = displayName(m);
+      $('cardLogin').textContent = (m.kind === 'password' ? 'Tài khoản: ' : 'Google: ') + loginName;
+      if (document.activeElement !== $('nameCard')) $('nameCard').value = m.name || '';
+      $('nameCard').placeholder = loginName.split('@')[0];
+    }
+    $('nameFrom').textContent = m && m.kind === 'google' ? 'tên Gmail' : 'tên đăng nhập';
+    $('namePrompt').hidden = !m || !!m.name || store('td.nameSkip') === m.email;
+    $('meName').textContent = displayName(m);
+    $('brandUser').textContent = m ? displayName(m) : 'chưa đăng nhập';
+    if (typeof updateWidget === 'function') updateWidget();
     var cur = (m && m.avatar) || '';
     $('avGrid').innerHTML = AV_EMOJI.map(function (e, i) {
       var v = e + '|' + AV_COLORS[i % AV_COLORS.length];
@@ -1170,6 +1219,21 @@
   });
   $('profilePop').addEventListener('click', function (e) { if (e.target.closest('[data-go],[data-google]')) $('profilePop').hidden = true; });
   $('nameSave').onclick = function () { saveProfile({ name: $('nameIn').value.trim() }, 'Đã đổi tên.'); };
+  function saveName(input, noteEl) {
+    var v = $(input).value.trim();
+    $(noteEl).textContent = 'Đang lưu…';
+    api({ action: 'profile', token: store('td.token'), name: v }).then(function (res) {
+      if (!res.ok) { $(noteEl).textContent = res.error === 'login' ? 'Phiên đăng nhập hết hạn.' : (res.error || 'Không lưu được.'); return; }
+      if (me) { me.name = res.name; renderProfile(me); }
+      $(noteEl).textContent = res.name ? 'Đã lưu: tên hiển thị là “' + res.name + '”.' : 'Đã quay về tên đăng nhập.';
+      if (input === 'nameFirst') $('namePrompt').hidden = true;
+    }).catch(function () { $(noteEl).textContent = 'Không kết nối được máy chủ.'; });
+  }
+  $('nameCardSave').onclick = function () { saveName('nameCard', 'nameCardNote'); };
+  $('nameCard').onkeydown = function (e) { if (e.key === 'Enter') saveName('nameCard', 'nameCardNote'); };
+  $('nameFirstSave').onclick = function () { if ($('nameFirst').value.trim()) saveName('nameFirst', 'nameFirstNote'); else $('nameFirst').focus(); };
+  $('nameFirst').onkeydown = function (e) { if (e.key === 'Enter') $('nameFirstSave').click(); };
+  $('nameFirstSkip').onclick = function () { if (me) store('td.nameSkip', me.email); $('namePrompt').hidden = true; };
   $('avGrid').onclick = function (e) { var b = e.target.closest('[data-av]'); if (b) saveProfile({ avatar: b.dataset.av }, 'Đã đổi ảnh đại diện.'); };
   $('avReset').onclick = function () { saveProfile({ avatar: '' }, 'Đã dùng chữ cái đầu.'); };
   $('avFile').onchange = function () {
@@ -1310,7 +1374,7 @@
     var d = pipWin.document, g = function (id) { return d.getElementById(id); };
     d.documentElement.setAttribute('style', widgetVars());
     var res = lastRes, s = res && res.snapshot;
-    g('wTitle').textContent = res ? viewLabel(res) : (store('td.token') ? 'Đang tải…' : 'Chưa đăng nhập');
+    g('wTitle').textContent = res ? displayName(me) + ' · ' + viewLabel(res) : (store('td.token') ? 'Đang tải…' : 'Chưa đăng nhập');
     if (!s) { g('wUsed').textContent = '—'; g('wLeft').textContent = ''; g('wBar').style.width = '0'; g('wTask').textContent = res ? 'Chưa có dữ liệu' : 'Mở app để đăng nhập'; g('wPop').innerHTML = ''; return; }
     var used = s.session.tokens.total;
     var leftP = s.budget ? Math.round((100 - s.budget.percentUsed) * 10) / 10 : Math.round((100 - s.context.percent) * 10) / 10;
