@@ -1,8 +1,10 @@
 {
-  "version": "1.5.3",
+  "version": "1.5.4",
   "date": "2026-11-18",
   "notes": [
-    "Thêm ngày tháng năm sinh và số điện thoại trong Hồ sơ",
-    "Bảng người dùng hiện ngày sinh (kèm tuổi) và số điện thoại"
+    "Hướng dẫn liên kết tài khoản Claude 4 bước có hình minh hoạ",
+    "Nút mở ứng dụng Claude, Claude trên web và tải Claude ngay trong mục Liên kết",
+    "Cài plugin token-meter từ marketplace phuchieu98/token-dashboard",
+    "Chế độ xem Tất cả: chu kỳ tuần cộng dồn đúng, ghi rõ hạn mức theo tài khoản nào"
   ]
 }

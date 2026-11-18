@@ -162,6 +162,36 @@
   .drawer .foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 
   .view[hidden] { display: none; }
+  .launch { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .launch a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: s; }
+  .step { display: grid; grid-template-columns: minmax(200px, 300px) 1fr; gap: 16px; align-items: center;
+    padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--field) 60%, transparent); }
+  .step .sbody { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.55; }
+  .step .sbody b:first-child { font-size: 14.5px; }
+  @media (max-width: 640px) { .step { grid-template-columns: 1fr; } }
+  .ill { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--bg); }
+  .ill text { font-family: system-ui, "Segoe UI", sans-serif; font-size: 9px; }
+  .ill .frame { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
+  .ill .bar { fill: var(--chip); }
+  .ill .screen { fill: var(--bg); }
+  .ill .field, .ill .bubble { fill: var(--field); stroke: var(--line); }
+  .ill .bubble2 { fill: var(--chip); }
+  .ill .menu { fill: var(--sheet); stroke: var(--line); filter: drop-shadow(0 4px 6px rgba(0,0,0,.25)); }
+  .ill .hl, .ill .acc { fill: var(--accent); }
+  .ill .chip2 { fill: var(--chip); stroke: var(--chip-line); }
+  .ill .okpill { fill: var(--teal); }
+  .ill .track { fill: var(--line); } .ill .fill { fill: var(--teal); }
+  .ill .caret { fill: var(--text); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .ill .dotr { fill: #ff5f57; } .ill .doty { fill: #febc2e; } .ill .dotg { fill: #28c840; }
+  .ill .t { fill: var(--text); } .ill .t-dim { fill: var(--muted); } .ill .t-on { fill: #fff; }
+  .ill .t-ok { fill: var(--teal); } .ill .t-code { fill: var(--accent); font-family: ui-monospace, Consolas, monospace; letter-spacing: .5px; }
+  .ill .t-mono { fill: var(--text); font-family: ui-monospace, Consolas, monospace; }
+  .ill .arrow, .ill .send { fill: none; stroke: var(--warn); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 4 3; }
+  .ill .send { stroke: #fff; stroke-dasharray: none; }
+  code.copyable { cursor: pointer; border-bottom: 1px dashed var(--muted); }
+  code.copyable.copied { color: var(--teal); }
   .info2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-top: 4px; }
   @media (max-width: 480px) { .info2 { grid-template-columns: 1fr; } }
   input[type="date"].f { color-scheme: dark; }
@@ -512,8 +542,117 @@
           <button class="btn" id="pairCopy">Sao chép</button>
         </div>
         <div class="hint" id="pairNote"></div>
+        <div class="launch" style="margin-top:10px">
+          <span class="sub">Mở Claude để dán lệnh:</span>
+          <a class="btn" href="claude://" data-launch="app">🖥 Mở ứng dụng Claude</a>
+          <a class="btn" href="https://claude.ai/code" target="_blank" rel="noopener">🌐 Mở Claude trên web</a>
+        </div>
         <div class="hint">Có thể thêm tên: <code>/token-meter link MÃ Claude công ty</code>. Không ghi tên thì dùng email tài khoản Claude trên máy đó.</div>
       </div>
+    </div>
+
+    <div class="card" id="guideCard">
+      <h2>Hướng dẫn liên kết tài khoản Claude</h2>
+      <div class="sub" id="guideDevice"></div>
+      <div class="launch">
+        <a class="btn primary" href="claude://" data-launch="app">🖥 Mở ứng dụng Claude</a>
+        <a class="btn" href="https://claude.ai/code" target="_blank" rel="noopener">🌐 Mở Claude trên web</a>
+        <a class="btn" href="https://claude.ai/download" target="_blank" rel="noopener">⬇ Tải ứng dụng Claude</a>
+      </div>
+      <div class="hint" id="launchNote"></div>
+
+      <ol class="steps">
+        <li class="step">
+          <svg class="ill" viewBox="0 0 280 150" role="img" aria-label="Cửa sổ Claude: bấm dấu cộng, chọn Plugins, Add marketplace">
+            <rect class="frame" x="6" y="8" width="268" height="134" rx="12"/>
+            <rect class="bar" x="6" y="8" width="268" height="22" rx="12"/><rect class="bar" x="6" y="20" width="268" height="10"/>
+            <circle class="dotr" cx="20" cy="19" r="3.5"/><circle class="doty" cx="31" cy="19" r="3.5"/><circle class="dotg" cx="42" cy="19" r="3.5"/>
+            <text class="t-dim" x="140" y="23" text-anchor="middle">Claude · Code</text>
+            <rect class="field" x="20" y="102" width="240" height="28" rx="8"/>
+            <circle class="acc" cx="38" cy="116" r="9"/><text class="t-on" x="38" y="120" text-anchor="middle" font-size="13" font-weight="700">+</text>
+            <rect class="menu" x="30" y="40" width="150" height="56" rx="8"/>
+            <text class="t" x="42" y="58">Plugins</text>
+            <rect class="hl" x="36" y="64" width="138" height="22" rx="6"/>
+            <text class="t-on" x="44" y="79" font-weight="600">Add marketplace</text>
+            <rect class="field" x="190" y="58" width="76" height="22" rx="6"/>
+            <text class="t-mono" x="228" y="73" text-anchor="middle">phuchieu98/…</text>
+            <path class="arrow" d="M47 108 L 70 92"/>
+          </svg>
+          <div class="sbody">
+            <b>1 · Cài plugin token-meter trên PC</b>
+            <div>Trong ứng dụng Claude (tab Code): <b>+</b> cạnh ô nhập → <b>Plugins</b> → <b>Add marketplace</b> → nhập
+              <code class="copyable" data-copy="phuchieu98/token-dashboard">phuchieu98/token-dashboard</code> → <b>Add plugin</b> ở mục <b>token-meter</b>.</div>
+            <div class="hint">Chỉ làm một lần cho mỗi PC. Dùng terminal: <code class="copyable" data-copy="/plugin install token-meter --marketplace phuchieu98/token-dashboard">/plugin install token-meter --marketplace phuchieu98/token-dashboard</code></div>
+          </div>
+        </li>
+
+        <li class="step">
+          <svg class="ill" viewBox="0 0 280 150" role="img" aria-label="App Token Dashboard trên điện thoại hiện mã ghép đôi">
+            <rect class="frame" x="95" y="4" width="90" height="142" rx="14"/>
+            <rect class="screen" x="101" y="14" width="78" height="122" rx="8"/>
+            <circle class="acc" cx="112" cy="25" r="6"/><text class="t-on" x="112" y="28" text-anchor="middle" font-size="8" font-weight="800">T</text>
+            <text class="t" x="122" y="28" font-size="7.5">Liên kết</text>
+            <rect class="hl" x="106" y="40" width="68" height="16" rx="5"/>
+            <text class="t-on" x="140" y="51" text-anchor="middle" font-size="6.6" font-weight="600">+ Liên kết Claude</text>
+            <rect class="field" x="106" y="64" width="68" height="34" rx="6"/>
+            <text class="t-dim" x="140" y="76" text-anchor="middle" font-size="6">/token-meter link</text>
+            <text class="t-code" x="140" y="91" text-anchor="middle" font-size="11" font-weight="700">ABCD-EFGH</text>
+            <rect class="chip2" x="118" y="104" width="44" height="13" rx="6"/>
+            <text class="t" x="140" y="113" text-anchor="middle" font-size="6.5">Sao chép</text>
+            <text class="t-dim" x="140" y="129" text-anchor="middle" font-size="6">còn 9:58</text>
+            <path class="arrow" d="M60 50 C 75 50, 82 48, 100 48"/>
+            <text class="t-dim" x="30" y="46" font-size="9">menu T →</text><text class="t-dim" x="30" y="58" font-size="9">Liên kết</text>
+          </svg>
+          <div class="sbody">
+            <b>2 · Lấy mã ghép đôi trong app</b>
+            <div>Menu <b>T</b> → <b>Liên kết tài khoản</b> → <b>+ Liên kết thêm tài khoản Claude</b> → bấm <b>Sao chép</b>. Mã dùng được 10 phút.</div>
+            <div class="hint">Lấy mã trên điện thoại cũng được, rồi gõ mã đó ở PC.</div>
+          </div>
+        </li>
+
+        <li class="step">
+          <svg class="ill" viewBox="0 0 280 150" role="img" aria-label="Dán lệnh /token-meter link vào khung chat Claude Code">
+            <rect class="frame" x="6" y="8" width="268" height="134" rx="12"/>
+            <rect class="bubble" x="120" y="22" width="140" height="22" rx="10"/>
+            <text class="t-dim" x="190" y="37" text-anchor="middle" font-size="8">Chào Claude…</text>
+            <rect class="bubble2" x="20" y="52" width="170" height="30" rx="10"/>
+            <text class="t" x="30" y="66" font-size="8">Đã liên kết tài khoản Claude</text>
+            <text class="t-ok" x="30" y="77" font-size="8">này với dashboard ✓</text>
+            <rect class="field" x="20" y="98" width="240" height="32" rx="9"/>
+            <text class="t-mono" x="32" y="118" font-size="10.5">/token-meter link ABCD-EFGH</text>
+            <rect class="caret" x="214" y="107" width="1.6" height="14"/>
+            <circle class="acc" cx="246" cy="114" r="9"/><path class="send" d="M242 114 L 251 114 M 247 110 L 251 114 L 247 118"/>
+          </svg>
+          <div class="sbody">
+            <b>3 · Dán lệnh vào Claude Code và gửi</b>
+            <div>Mở Claude trên PC (nút ở trên), dán <code>/token-meter link MÃ</code> vào ô chat rồi Enter. Claude trả lời “Đã liên kết…”.</div>
+            <div class="hint">Muốn đặt tên: <code>/token-meter link MÃ Claude công ty</code>.</div>
+          </div>
+        </li>
+
+        <li class="step">
+          <svg class="ill" viewBox="0 0 280 150" role="img" aria-label="App hiện tài khoản đã liên kết và số token cập nhật trực tiếp">
+            <rect class="frame" x="20" y="10" width="150" height="128" rx="10"/>
+            <rect class="screen" x="26" y="18" width="138" height="112" rx="6"/>
+            <text class="t-dim" x="34" y="32" font-size="7">ĐÃ SỬ DỤNG</text>
+            <text class="t" x="34" y="50" font-size="16" font-weight="800">271.7K</text>
+            <text class="t-ok" x="100" y="50" font-size="8" font-weight="700">32%</text>
+            <rect class="track" x="34" y="58" width="120" height="5" rx="2.5"/><rect class="fill" x="34" y="58" width="40" height="5" rx="2.5"/>
+            <text class="t-dim" x="34" y="78" font-size="7">TASK ĐANG CHẠY</text>
+            <text class="t" x="34" y="92" font-size="9" font-weight="700">48.2K · 17.7%</text>
+            <rect class="track" x="34" y="100" width="120" height="4" rx="2"/><rect class="fill" x="34" y="100" width="22" height="4" rx="2"/>
+            <text class="t-dim" x="34" y="120" font-size="6.5">cập nhật 3 giây trước</text>
+            <rect class="okpill" x="180" y="56" width="88" height="26" rx="13"/>
+            <text class="t-on" x="224" y="73" text-anchor="middle" font-size="9" font-weight="700">✓ Đã liên kết</text>
+            <path class="arrow" d="M178 69 L 166 69"/>
+          </svg>
+          <div class="sbody">
+            <b>4 · Xem số liệu trực tiếp ở mọi thiết bị</b>
+            <div>Trong vài giây, app hiện <b>Đã liên kết</b> và số token bắt đầu chạy. Mở app trên điện thoại (cùng tài khoản) để theo dõi khi đang làm việc trên PC.</div>
+            <div class="hint">Lặp lại bước 2–3 cho mỗi tài khoản hoặc máy Claude khác. Ngừng gửi: <code>/token-meter unlink</code>.</div>
+          </div>
+        </li>
+      </ol>
     </div>
 
     <div class="card">
@@ -628,7 +767,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.3';
+  var APP_VERSION = '1.5.4';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
   // The same Apps Script deployed a second time as "Execute as: User accessing" — it reads the visitor's Google account.
   var DEFAULT_LOGIN_URL = 'https://script.google.com/macros/s/AKfycbxfSbGgeKFixSZXJ4mLa0AW-fI3I-MHE2OkKseFWk3PlGD7pTzZY7gFZPQjyvtGtT7O/exec';
@@ -750,7 +889,7 @@
     $$('.nav').forEach(function (n) { n.classList.toggle('on', n.dataset.go === view); });
     $('pageTitle').textContent = VIEW_TITLES[view] || 'Token Dashboard';
     store('td.lastView', view);
-    if (view === 'accounts') renderSessions();
+    if (view === 'accounts') { renderSessions(); renderGuide(); }
     if (view === 'download') renderInstall();
     openMenu(false);
     window.scrollTo(0, 0);
@@ -884,7 +1023,8 @@
     $('leftPct').textContent = leftP + '%';
     $('leftBar').style.width = (100 - leftP) + '%';
     $('leftBarWrap').className = 'bar' + (leftP < 15 ? ' warn' : '');
-    $('leftWhat').textContent = what + (s.budget ? ' · context ' + (Math.round((100 - s.context.percent) * 10) / 10) + '% trống' : '');
+    $('leftWhat').textContent = what + (s.budget ? ' · context ' + (Math.round((100 - s.context.percent) * 10) / 10) + '% trống' : '') +
+      (s.limitsFrom ? ' · context theo ' + s.limitsFrom : '');
 
     $('limits').innerHTML = (s.limits || []).map(function (l) {
       var left = Math.round((100 - l.percentUsed) * 10) / 10;
@@ -968,7 +1108,8 @@
     var w = act.week || (L7 && L7.resetsAt ? { start: Date.parse(L7.resetsAt) - 7 * DAY_MS, end: Date.parse(L7.resetsAt), activeMs: 0, tokens: 0 } : calendarWeek(now));
     var pct = L7 ? L7.percentUsed : (s.budget ? s.budget.percentUsed : null);
     var daysLeft = Math.max(0, Math.ceil((w.end - now) / DAY_MS));
-    $('weekRange').textContent = 'Từ ' + fmtDay(w.start) + ' đến ' + fmtDay(w.end) + ' · còn ' + daysLeft + ' ngày';
+    var from = s.limitsFrom ? ' · hạn mức theo ' + s.limitsFrom : '';
+    $('weekRange').textContent = 'Từ ' + fmtDay(w.start) + ' đến ' + fmtDay(w.end) + ' · còn ' + daysLeft + ' ngày' + from;
     var leftTok = pct > 0 && w.tokens > 0 ? w.tokens * (100 - pct) / pct : (s.budget ? s.budget.remaining : null);
     $('weekLeftTok').textContent = leftTok == null ? '—' : fmt(leftTok) + (pct != null ? ' · ' + (Math.round((100 - pct) * 10) / 10) + '%' : '');
     $('weekLeftTok').title = leftTok == null ? '' : full(Math.round(leftTok)) + ' token';
@@ -985,7 +1126,8 @@
 
     var rows = [[L5, 'Giới hạn 5 giờ', 'five'], [L7, 'Giới hạn tuần (7 ngày)', 'week']].filter(function (r) { return r[0]; });
     $('resets').className = rows.length ? '' : 'empty';
-    $('resets').innerHTML = rows.length ? rows.map(function (r) {
+    $('resets').innerHTML = (rows.length && s.limitsFrom ? '<div class="sub">Hạn mức của tài khoản ' + esc(s.limitsFrom) + ' (gửi số liệu gần nhất)</div>' : '') +
+      (rows.length ? rows.map(function (r) {
       var l = r[0], end = l.resetsAt ? Date.parse(l.resetsAt) : null, full100 = l.percentUsed >= 100;
       var start = end ? end - LIMIT_SPAN[l.kind] : null;
       return '<div class="rs"><div class="row"><b>' + r[1] + '</b><span class="' + (full100 ? 'no' : 'ok') + '">' + (full100 ? 'Đã hết hạn mức' : 'Đang dùng được') + '</span></div>' +
@@ -994,7 +1136,7 @@
                '<div class="row"><span>Còn</span><b class="mono" data-until="' + end + '">' + fmtDur(end - now) + '</b></div>' : '') +
         (!full100 ? '<div class="row"><span>Chat còn dùng được</span><b class="mono" data-left="' + r[2] + '">' + fmtDur(r[2] === 'five' ? fk : wk) + '</b></div>' : '') +
         '</div>';
-    }).join('') : 'Gói hiện tại không báo hạn mức (ví dụ đăng nhập bằng API key).';
+    }).join('') : 'Gói hiện tại không báo hạn mức (ví dụ đăng nhập bằng API key).');
 
     var t = s.task || s.lastTask;
     if (t && t.tokens) {
@@ -1137,6 +1279,35 @@
       }, 1000);
     }).catch(function () { $('pairBtn').disabled = false; $('pairNote').textContent = 'Không kết nối được máy chủ.'; $('pairBox').hidden = false; });
   };
+  // Opening Claude: the desktop app through its claude:// link, the web, or the download page.
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('code.copyable');
+    if (c) {
+      (navigator.clipboard ? navigator.clipboard.writeText(c.dataset.copy) : Promise.reject()).then(function () {
+        c.classList.add('copied'); var t = c.textContent; c.textContent = 'Đã chép ✓';
+        setTimeout(function () { c.textContent = t; c.classList.remove('copied'); }, 1400);
+      }, function () {});
+      return;
+    }
+    var a = e.target.closest('a[data-launch="app"]');
+    if (!a) return;
+    if (DEVICE.kind !== 'pc') {
+      e.preventDefault();
+      $('launchNote').textContent = 'Claude Code chạy trên máy tính: lấy mã ở đây rồi gõ lệnh trên PC, hoặc mở Claude trên web.';
+      return;
+    }
+    // If the app does not take the link, the page stays put: say what to do next.
+    var left = false;
+    window.addEventListener('blur', function onBlur() { left = true; window.removeEventListener('blur', onBlur); });
+    setTimeout(function () {
+      if (!left) $('launchNote').innerHTML = 'Không mở được ứng dụng Claude? <a href="https://claude.ai/download" target="_blank" rel="noopener">Tải ứng dụng</a> hoặc dùng <a href="https://claude.ai/code" target="_blank" rel="noopener">Claude trên web</a>.';
+    }, 1500);
+  });
+  function renderGuide() {
+    $('guideDevice').textContent = DEVICE.kind === 'pc'
+      ? 'Bạn đang dùng ' + DEVICE.os + ': làm cả 4 bước trên máy này.'
+      : 'Bạn đang dùng ' + DEVICE.name.toLowerCase() + ': làm bước 2 và 4 ở đây, bước 1 và 3 trên PC có Claude Code.';
+  }
   $('pairCopy').onclick = function () {
     var t = $('pairCmd').textContent;
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('pairCopy').textContent = 'Đã chép'; setTimeout(function () { $('pairCopy').textContent = 'Sao chép'; }, 1500); }, function () {});
