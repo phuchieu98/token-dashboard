@@ -1,0 +1,11 @@
+{
+  "name": "token-dashboard",
+  "owner": { "name": "phuchieu98" },
+  "plugins": [
+    {
+      "name": "token-meter",
+      "source": "./claude-mod/token-meter",
+      "description": "Đo token Claude Code (phiên, task, giới hạn) và gửi lên app Token Dashboard"
+    }
+  ]
+}
