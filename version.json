@@ -1,9 +1,8 @@
 {
-  "version": "1.5.2",
+  "version": "1.5.3",
   "date": "2026-11-18",
   "notes": [
-    "Đặt tên hiển thị riêng thay cho tên Gmail hoặc tên đăng nhập",
-    "Mục Hồ sơ mới trong menu chữ T",
-    "Tên hiển thị dùng ở mọi nơi trong app và cửa sổ treo góc"
+    "Thêm ngày tháng năm sinh và số điện thoại trong Hồ sơ",
+    "Bảng người dùng hiện ngày sinh (kèm tuổi) và số điện thoại"
   ]
 }

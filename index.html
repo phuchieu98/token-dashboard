@@ -162,6 +162,12 @@
   .drawer .foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 
   .view[hidden] { display: none; }
+  .info2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-top: 4px; }
+  @media (max-width: 480px) { .info2 { grid-template-columns: 1fr; } }
+  input[type="date"].f { color-scheme: dark; }
+  :root[data-theme="light"] input[type="date"].f { color-scheme: light; }
+  .pinfo { margin-top: 10px; font-size: 13px; }
+  .pinfo .row { margin-top: 4px; }
   .nrow { display: flex; gap: 8px; flex-wrap: wrap; }
   .nrow input.f { flex: 1; min-width: 160px; width: auto; }
   .namecard { border-color: var(--accent); }
@@ -261,6 +267,11 @@
     <div style="min-width:0"><b id="popName">Khách</b><div class="sub" id="popEmail">chưa đăng nhập</div></div>
   </div>
   <div id="popSigned">
+    <div class="pinfo">
+      <div class="row"><span class="sub">Ngày sinh</span><span id="popBday">—</span></div>
+      <div class="row"><span class="sub">Số điện thoại</span><span id="popPhone">—</span></div>
+      <div class="row"><span></span><a href="#" data-go="profile">Sửa thông tin cá nhân</a></div>
+    </div>
     <label class="f" for="nameIn">Tên hiển thị</label>
     <div style="display:flex;gap:8px"><input class="f" id="nameIn" maxlength="40" placeholder="Tên của bạn"><button class="btn primary" id="nameSave">Lưu</button></div>
     <label class="f">Ảnh đại diện</label>
@@ -465,6 +476,19 @@
         <div class="nrow"><input class="f" id="nameCard" maxlength="40" placeholder="Tên bạn muốn hiện trong app"><button class="btn primary" id="nameCardSave">Lưu</button></div>
         <div class="hint">Để trống rồi Lưu để quay về tên đăng nhập. Ảnh đại diện: bấm vào tên ở góc phải trên.</div>
         <div class="hint" id="nameCardNote"></div>
+        <div class="info2">
+          <div>
+            <label class="f" for="bdayIn">Ngày tháng năm sinh</label>
+            <input class="f" id="bdayIn" type="date" min="1900-01-01">
+          </div>
+          <div>
+            <label class="f" for="phoneIn">Số điện thoại</label>
+            <input class="f" id="phoneIn" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="vd: 0912 345 678">
+          </div>
+        </div>
+        <div class="actions"><button class="btn primary" id="infoSave">Lưu thông tin</button></div>
+        <div class="hint">Chỉ bạn xem được; lưu theo tài khoản trên máy chủ của app. Để trống rồi Lưu để xoá.</div>
+        <div class="hint" id="infoNote"></div>
       </div>
     </div>
 
@@ -604,7 +628,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.2';
+  var APP_VERSION = '1.5.3';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
   // The same Apps Script deployed a second time as "Execute as: User accessing" — it reads the visitor's Google account.
   var DEFAULT_LOGIN_URL = 'https://script.google.com/macros/s/AKfycbxfSbGgeKFixSZXJ4mLa0AW-fI3I-MHE2OkKseFWk3PlGD7pTzZY7gFZPQjyvtGtT7O/exec';
@@ -1192,6 +1216,11 @@
       $('cardLogin').textContent = (m.kind === 'password' ? 'Tài khoản: ' : 'Google: ') + loginName;
       if (document.activeElement !== $('nameCard')) $('nameCard').value = m.name || '';
       $('nameCard').placeholder = loginName.split('@')[0];
+      if (document.activeElement !== $('bdayIn')) $('bdayIn').value = m.birthday || '';
+      if (document.activeElement !== $('phoneIn')) $('phoneIn').value = m.phone || '';
+      $('bdayIn').max = new Date().toISOString().slice(0, 10);
+      $('popBday').textContent = m.birthday ? fmtBirthday(m.birthday) : 'chưa có';
+      $('popPhone').textContent = m.phone ? fmtPhone(m.phone) : 'chưa có';
     }
     $('nameFrom').textContent = m && m.kind === 'google' ? 'tên Gmail' : 'tên đăng nhập';
     $('namePrompt').hidden = !m || !!m.name || store('td.nameSkip') === m.email;
@@ -1230,6 +1259,30 @@
     }).catch(function () { $(noteEl).textContent = 'Không kết nối được máy chủ.'; });
   }
   $('nameCardSave').onclick = function () { saveName('nameCard', 'nameCardNote'); };
+
+  // Birthday (yyyy-mm-dd) and phone, shown dd/mm/yyyy (tuổi) and grouped digits.
+  function fmtBirthday(iso) {
+    var p = iso.split('-'), b = new Date(+p[0], +p[1] - 1, +p[2]), n = new Date();
+    var age = n.getFullYear() - b.getFullYear() - ((n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) ? 1 : 0);
+    return p[2] + '/' + p[1] + '/' + p[0] + ' (' + age + ' tuổi)';
+  }
+  function fmtPhone(ph) {
+    var plus = ph.charAt(0) === '+', d = ph.replace(/\D/g, '');
+    if (!plus && d.length === 10) return d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7);
+    if (plus && d.indexOf('84') === 0) return '+84 ' + d.slice(2).replace(/(\d{3})(?=\d)/g, '$1 ');
+    return (plus ? '+' : '') + d.replace(/(\d{3})(?=\d)/g, '$1 ');
+  }
+  $('infoSave').onclick = function () {
+    var bday = $('bdayIn').value, phone = $('phoneIn').value.trim();
+    if (phone && !/^\+?[\d\s.()-]{8,20}$/.test(phone)) { $('infoNote').textContent = 'Số điện thoại chỉ gồm chữ số (8–15 số), có thể bắt đầu bằng +.'; return; }
+    $('infoNote').textContent = 'Đang lưu…'; $('infoSave').disabled = true;
+    api({ action: 'profile', token: store('td.token'), birthday: bday, phone: phone }).then(function (res) {
+      if (!res.ok) { $('infoNote').textContent = res.error === 'login' ? 'Phiên đăng nhập hết hạn.' : (res.error || 'Không lưu được.'); return; }
+      if (me) { me.birthday = res.birthday; me.phone = res.phone; renderProfile(me); }
+      $('infoNote').textContent = 'Đã lưu' + (res.birthday ? ' · sinh ngày ' + fmtBirthday(res.birthday) : '') + (res.phone ? ' · SĐT ' + fmtPhone(res.phone) : '') + '.';
+    }).catch(function () { $('infoNote').textContent = 'Không kết nối được máy chủ.'; })
+      .finally(function () { $('infoSave').disabled = false; });
+  };
   $('nameCard').onkeydown = function (e) { if (e.key === 'Enter') saveName('nameCard', 'nameCardNote'); };
   $('nameFirstSave').onclick = function () { if ($('nameFirst').value.trim()) saveName('nameFirst', 'nameFirstNote'); else $('nameFirst').focus(); };
   $('nameFirst').onkeydown = function (e) { if (e.key === 'Enter') $('nameFirstSave').click(); };
