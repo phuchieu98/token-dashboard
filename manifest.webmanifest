@@ -2,6 +2,7 @@
   "name": "Token Dashboard",
   "short_name": "Token",
   "description": "Theo dõi token Claude đã dùng, còn lại và theo từng task.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -13,5 +14,9 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Toàn màn hình", "short_name": "Toàn màn hình", "url": "./", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Treo góc màn hình", "short_name": "Treo góc", "url": "./?widget=1", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

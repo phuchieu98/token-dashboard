@@ -1,0 +1,11 @@
+{
+  "version": "1.5.1",
+  "date": "2026-11-18",
+  "notes": [
+    "Đăng nhập bằng tài khoản + mật khẩu hoặc tài khoản Google",
+    "Nút người dùng ở góc phải: đổi tên, chọn ảnh đại diện",
+    "Chu kỳ tuần: token và thời gian chat còn dùng được",
+    "Mục Đặt lại & dùng lại, gợi ý chọn model",
+    "Tự báo khi có bản cập nhật mới"
+  ]
+}
