@@ -67,6 +67,19 @@
   .setup input { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: #150f2c; color: var(--text); font: inherit; }
   .setup .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .setup details { margin-top: 10px; }
+  .setup details input { margin-top: 6px; }
+  .acctbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; }
+  .acctbar[hidden] { display: none; }
+  .acctbar .status { margin-left: 6px; }
+  .acctpick { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  .acctpick select { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: #150f2c; color: var(--text); font: inherit; }
+  #logoutBtn { margin-left: auto; }
+  .acc { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; cursor: pointer; padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; }
+  .acc:hover, .acc.sel { border-color: var(--line); background: #211a40; }
+  .acc .name { font-weight: 600; }
+  .acc .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .acc .meta { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
   /* Download button pinned to the top-right corner */
   .dl {
     position: fixed; z-index: 20;
@@ -121,22 +134,38 @@
     </div>
   </div>
 
-  <div class="card setup" id="setup">
-    <h2>Kết nối</h2>
-    <label for="urlIn">URL web app Apps Script (…/exec)</label>
-    <input id="urlIn" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
-    <label for="keyIn">Mã xem VIEW_KEY (bỏ trống nếu không đặt)</label>
-    <input id="keyIn" type="password" autocomplete="off">
+  <form class="card setup" id="setup" autocomplete="on">
+    <h2>Đăng nhập</h2>
+    <label for="userIn">Tài khoản</label>
+    <input id="userIn" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="vd: hieu">
+    <label for="passIn">Mật khẩu</label>
+    <input id="passIn" name="password" type="password" autocomplete="current-password">
+    <details id="urlBox">
+      <summary class="hint">Máy chủ dữ liệu (URL …/exec)</summary>
+      <input id="urlIn" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    </details>
     <div class="actions">
-      <button class="btn primary" id="saveBtn">Lưu</button>
-      <button class="btn" id="miniBtn">Chế độ thu nhỏ</button>
-      <button class="btn" id="linkBtn">Sao chép link cài cho máy khác</button>
+      <button class="btn primary" id="loginBtn" type="submit">Đăng nhập</button>
+      <button class="btn" id="miniBtn" type="button">Chế độ thu nhỏ</button>
+      <button class="btn" id="linkBtn" type="button">Sao chép link cài cho máy khác</button>
     </div>
+    <div class="hint">Tạo tài khoản trong Claude: <code>/token-meter account &lt;tên&gt; &lt;mật khẩu&gt;</code> (thêm <code>admin</code> để xem mọi tài khoản).</div>
     <div class="hint" id="iosHint" hidden>iPhone/iPad: bấm nút Chia sẻ → “Thêm vào MH chính” để cài app.</div>
     <div class="hint" id="setupNote"></div>
+  </form>
+
+  <div class="acctbar" id="acctbar" hidden>
+    <span>👤 <b id="meName">—</b><span id="meRole" class="status idle" hidden>admin</span></span>
+    <span class="acctpick" id="pickWrap" hidden>Xem tài khoản <select id="acctSel"></select></span>
+    <button class="btn" id="logoutBtn" type="button">Đăng xuất</button>
   </div>
 
   <div class="grid">
+    <div class="card wide" id="accountsCard" hidden>
+      <h2>Các tài khoản</h2>
+      <div id="accounts" class="tl"></div>
+    </div>
+
     <div class="card">
       <h2>Đã sử dụng (phiên)</h2>
       <div><span class="big" id="used">—</span><span class="pct" id="usedPct"></span></div>
@@ -180,12 +209,14 @@
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
 
   // A setup link carries the settings in the #hash, which never reaches any server:
-  //   …/#u=<exec URL>&k=<VIEW_KEY>&mini=1
+  //   …/#u=<exec URL>&a=<account>&mini=1
+  // The data server below is the default; #u= or the login form can point elsewhere.
+  var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
   (function readHash() {
     if (!location.hash) return;
     var p = new URLSearchParams(location.hash.slice(1));
     if (p.get('u')) store('td.url', p.get('u'));
-    if (p.has('k')) store('td.key', p.get('k'));
+    if (p.get('a')) store('td.user', p.get('a'));
     if (p.has('mini')) store('td.mini', p.get('mini') === '1' ? '1' : '0');
     history.replaceState(null, '', location.pathname + location.search);
   })();
@@ -204,20 +235,71 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var LIMIT_NAMES = { five_hour: 'Giới hạn 5 giờ', seven_day: 'Giới hạn 7 ngày', spend_limit: 'Hạn mức chi' };
 
+  function serverUrl() { return store('td.url') || DEFAULT_URL; }
+
+  function api(body) {
+    // text/plain keeps this a "simple" request, so Apps Script answers it cross-origin.
+    return fetch(serverUrl(), { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); });
+  }
+
   function openSetup(note) {
     $('setup').classList.add('open');
-    $('urlIn').value = store('td.url');
-    $('keyIn').value = store('td.key');
+    $('urlIn').value = serverUrl();
+    $('userIn').value = store('td.user');
+    $('passIn').value = '';
     $('setupNote').textContent = note || '';
+  }
+
+  function clearView() {
+    ['used', 'left', 'taskTok'].forEach(function (id) { $(id).textContent = '—'; });
+    ['usedPct', 'usedSplit', 'cost', 'leftPct', 'leftWhat', 'taskPct', 'taskMeta'].forEach(function (id) { $(id).textContent = ''; });
+    $('limits').innerHTML = ''; $('skills').innerHTML = '';
+    $('tasks').className = 'empty'; $('tasks').textContent = 'Chưa có task nào hoàn thành.';
+    lastAt = 0;
+  }
+
+  function renderAccounts(res) {
+    var bar = $('acctbar');
+    bar.hidden = false;
+    $('meName').textContent = res.me.account;
+    $('meRole').hidden = !res.me.admin;
+    $('pickWrap').hidden = !res.me.admin;
+    $('accountsCard').hidden = !res.me.admin;
+    if (!res.me.admin) return;
+    var list = res.accounts || [];
+    var sel = $('acctSel');
+    var names = list.map(function (a) { return a.account; });
+    if (sel.dataset.names !== names.join(',')) {
+      sel.innerHTML = names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+      sel.dataset.names = names.join(',');
+    }
+    sel.value = res.account;
+    var max = Math.max.apply(null, list.map(function (a) { return a.total; }).concat([1]));
+    $('accounts').innerHTML = list.map(function (a) {
+      var ago = a.updatedAt ? Math.round((Date.now() - a.updatedAt) / 60000) : null;
+      return '<div class="acc' + (a.account === res.account ? ' sel' : '') + '" data-acc="' + esc(a.account) + '">' +
+        '<div class="name">' + (a.running ? '● ' : '') + esc(a.account) + '</div>' +
+        '<div class="num">' + fmt(a.total) + '</div>' +
+        '<div class="ti" style="border:0;padding:0;grid-column:1/-1"><div class="mbar"><i style="width:' + (a.total / max * 100).toFixed(1) + '%"></i></div></div>' +
+        '<div class="meta">' + (ago === null ? 'chưa có dữ liệu' : 'cập nhật ' + (ago < 1 ? 'vừa xong' : ago + ' phút trước')) + (a.running ? ' · đang chạy task' : '') + '</div></div>';
+    }).join('') || '<div class="empty">Chưa có tài khoản nào gửi dữ liệu.</div>';
   }
 
   function render(res) {
     if (!res || !res.ok) {
-      if (res && res.error === 'unauthorized') { openSetup('Sai hoặc thiếu mã xem (VIEW_KEY).'); $('ago').textContent = 'cần mã xem'; }
+      if (res && res.error === 'login') {
+        store('td.token', '');
+        $('acctbar').hidden = true;
+        clearView();
+        openSetup('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+        $('ago').textContent = 'chưa đăng nhập';
+      }
       return;
     }
+    renderAccounts(res);
     var s = res.snapshot;
-    if (!s) { $('ago').textContent = 'chưa có dữ liệu — chạy /token-meter sync'; return; }
+    if (!s) { clearView(); $('ago').textContent = 'tài khoản "' + res.account + '" chưa có dữ liệu'; return; }
     lastAt = s.receivedAt || s.updatedAt || 0;
 
     var used = s.session.tokens.total;
@@ -307,26 +389,54 @@
     $('dot').className = 'dot' + (s > 120 ? ' off' : '');
   }
 
+  var busy = false;
   function load() {
-    var url = store('td.url');
-    if (!url) { $('ago').textContent = 'chưa kết nối'; openSetup('Dán URL /exec của web app để bắt đầu.'); return; }
-    var q = url + (url.indexOf('?') < 0 ? '?' : '&') + 'format=json&key=' + encodeURIComponent(store('td.key'));
-    fetch(q, { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    if (!store('td.token')) { $('ago').textContent = 'chưa đăng nhập'; openSetup(''); return; }
+    if (busy) return;
+    busy = true;
+    api({ action: 'get', token: store('td.token'), account: store('td.view') })
       .then(render)
-      .catch(function () { $('ago').textContent = 'mất kết nối'; $('dot').className = 'dot off'; });
+      .catch(function () { $('ago').textContent = 'mất kết nối'; $('dot').className = 'dot off'; })
+      .finally(function () { busy = false; });
   }
 
   $('setupBtn').onclick = function () { $('setup').classList.contains('open') ? $('setup').classList.remove('open') : openSetup(''); };
-  $('saveBtn').onclick = function () {
-    store('td.url', $('urlIn').value.trim());
-    store('td.key', $('keyIn').value.trim());
-    $('setup').classList.remove('open');
-    load();
+  $('setup').onsubmit = function (e) {
+    e.preventDefault();
+    var url = $('urlIn').value.trim();
+    store('td.url', url && url !== DEFAULT_URL ? url : '');
+    var user = $('userIn').value.trim();
+    $('setupNote').textContent = 'Đang đăng nhập…';
+    $('loginBtn').disabled = true;
+    api({ action: 'login', account: user, password: $('passIn').value })
+      .then(function (res) {
+        if (!res.ok) { $('setupNote').textContent = res.error || 'Không đăng nhập được.'; return; }
+        store('td.user', res.account);
+        store('td.token', res.token);
+        store('td.view', '');
+        $('passIn').value = '';
+        $('setup').classList.remove('open');
+        load();
+      })
+      .catch(function () { $('setupNote').textContent = 'Không kết nối được máy chủ dữ liệu. Kiểm tra URL.'; })
+      .finally(function () { $('loginBtn').disabled = false; });
+  };
+  $('logoutBtn').onclick = function () {
+    var token = store('td.token');
+    store('td.token', ''); store('td.view', '');
+    $('acctbar').hidden = true; $('accountsCard').hidden = true;
+    clearView();
+    api({ action: 'logout', token: token }).catch(function () {});
+    openSetup('Đã đăng xuất.');
+  };
+  $('acctSel').onchange = function () { store('td.view', this.value); load(); };
+  $('accounts').onclick = function (e) {
+    var row = e.target.closest('.acc');
+    if (row) { store('td.view', row.dataset.acc); load(); }
   };
   $('miniBtn').onclick = function () { store('td.mini', store('td.mini') === '1' ? '0' : '1'); applyMini(); };
   $('linkBtn').onclick = function () {
-    var link = location.origin + location.pathname + '#u=' + encodeURIComponent(store('td.url')) + (store('td.key') ? '&k=' + encodeURIComponent(store('td.key')) : '');
+    var link = location.origin + location.pathname + (store('td.url') ? '#u=' + encodeURIComponent(store('td.url')) : '');
     (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(
       function () { $('setupNote').textContent = 'Đã sao chép. Mở link này trên máy khác để cài app đã kết nối sẵn.'; },
       function () { $('setupNote').textContent = link; });

@@ -1,5 +1,5 @@
 // Token Dashboard service worker: the app shell works offline; data always comes fresh.
-const CACHE = 'token-dash-v2';
+const CACHE = 'token-dash-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
