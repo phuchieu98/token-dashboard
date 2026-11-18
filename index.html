@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120f24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Token">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Token Dashboard</title>
+<style>
+  :root {
+    --bg: #120f24; --card: #1b1634; --line: #2c2550; --text: #f2efff; --muted: #a59dcb;
+    --accent: #8b7cff; --teal: #3ee0b0; --warn: #ffb547; --danger: #ff6b8a;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, #2a1f6b 0, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, #0f4a45 0, transparent 55%), var(--bg);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .2px; }
+  .hright { display: flex; align-items: center; gap: 8px; }
+  .live { color: var(--muted); font-size: 12px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); margin-right: 6px; box-shadow: 0 0 10px var(--teal); animation: pulse 2s infinite; }
+  .dot.off { background: var(--danger); box-shadow: none; animation: none; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .btn { padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line); background: #231c44; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .card { background: color-mix(in srgb, var(--card) 88%, transparent); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .card h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  .big { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pct { font-size: 15px; color: var(--teal); margin-left: 6px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 8px 0 4px; }
+  .bar > i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--accent)); transition: width .6s ease; }
+  .bar.warn > i { background: linear-gradient(90deg, var(--warn), var(--danger)); }
+  .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { padding: 3px 10px; border-radius: 99px; background: #2a2156; border: 1px solid #3c3175; font-size: 12px; }
+  .wide { grid-column: 1 / -1; }
+  .status { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .status.run { background: #123d33; color: var(--teal); }
+  .status.idle { background: #2c2550; color: var(--muted); }
+  .empty { color: var(--muted); }
+  .tl { display: flex; flex-direction: column; gap: 10px; }
+  .ti { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .ti:last-child { border-bottom: 0; padding-bottom: 0; }
+  .ti .what { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ti .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ti .meta { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .ti .mbar { grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .ti .mbar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--accent)); }
+  .ti.run .what::before { content: '● '; color: var(--teal); }
+  .setup { display: none; }
+  .setup.open { display: block; margin-bottom: 12px; }
+  .setup label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  .setup input { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: #150f2c; color: var(--text); font: inherit; }
+  .setup .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  /* mini: a small window in a screen corner */
+  body.mini .wrap { padding: 10px; }
+  body.mini header h1 { font-size: 14px; }
+  body.mini .grid { grid-template-columns: 1fr; gap: 8px; }
+  body.mini .card { padding: 10px 12px; }
+  body.mini .big { font-size: 20px; }
+  body.mini .hide-mini, body.mini .ti:nth-child(n+4) { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Token Dashboard</h1>
+    <div class="hright">
+      <span class="live"><span id="dot" class="dot off"></span><span id="ago">đang tải…</span></span>
+      <button class="btn primary" id="installBtn" hidden>Cài app</button>
+      <button class="btn" id="setupBtn" aria-label="Cài đặt">⚙</button>
+    </div>
+  </header>
+
+  <div class="card setup" id="setup">
+    <h2>Kết nối</h2>
+    <label for="urlIn">URL web app Apps Script (…/exec)</label>
+    <input id="urlIn" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+    <label for="keyIn">Mã xem VIEW_KEY (bỏ trống nếu không đặt)</label>
+    <input id="keyIn" type="password" autocomplete="off">
+    <div class="actions">
+      <button class="btn primary" id="saveBtn">Lưu</button>
+      <button class="btn" id="miniBtn">Chế độ thu nhỏ</button>
+      <button class="btn" id="linkBtn">Sao chép link cài cho máy khác</button>
+    </div>
+    <div class="hint" id="iosHint" hidden>iPhone/iPad: bấm nút Chia sẻ → “Thêm vào MH chính” để cài app.</div>
+    <div class="hint" id="setupNote"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Đã sử dụng (phiên)</h2>
+      <div><span class="big" id="used">—</span><span class="pct" id="usedPct"></span></div>
+      <div class="sub" id="usedSplit"></div>
+      <div class="sub" id="cost"></div>
+    </div>
+
+    <div class="card">
+      <h2>Còn lại</h2>
+      <div><span class="big" id="left">—</span><span class="pct" id="leftPct"></span></div>
+      <div class="bar" id="leftBarWrap"><i id="leftBar"></i></div>
+      <div class="sub" id="leftWhat"></div>
+      <div id="limits"></div>
+    </div>
+
+    <div class="card">
+      <h2>Task <span id="taskStatus" class="status idle">—</span></h2>
+      <div><span class="big" id="taskTok">—</span><span class="pct" id="taskPct"></span></div>
+      <div class="sub" id="taskMeta"></div>
+      <div class="chips" id="skills"></div>
+    </div>
+
+    <div class="card wide">
+      <h2>Token dùng cho việc gì · theo task</h2>
+      <div id="tasks" class="empty">Chưa có task nào hoàn thành.</div>
+    </div>
+
+    <div class="card wide hide-mini" id="extCard">
+      <h2>Mở rộng · liên kết</h2>
+      <div id="ext" class="empty">Chưa có mục mở rộng.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var REFRESH_MS = 5000;
+  var lastAt = 0;
+  var deferredInstall = null;
+
+  function $(id) { return document.getElementById(id); }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } }
+
+  // A setup link carries the settings in the #hash, which never reaches any server:
+  //   …/#u=<exec URL>&k=<VIEW_KEY>&mini=1
+  (function readHash() {
+    if (!location.hash) return;
+    var p = new URLSearchParams(location.hash.slice(1));
+    if (p.get('u')) store('td.url', p.get('u'));
+    if (p.has('k')) store('td.key', p.get('k'));
+    if (p.has('mini')) store('td.mini', p.get('mini') === '1' ? '1' : '0');
+    history.replaceState(null, '', location.pathname + location.search);
+  })();
+  if (new URLSearchParams(location.search).get('mini') === '1') store('td.mini', '1');
+  function applyMini() { document.body.classList.toggle('mini', store('td.mini') === '1'); $('miniBtn').textContent = store('td.mini') === '1' ? 'Chế độ đầy đủ' : 'Chế độ thu nhỏ'; }
+  applyMini();
+
+  function fmt(n) {
+    n = Number(n) || 0;
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(Math.round(n));
+  }
+  function full(n) { return (Number(n) || 0).toLocaleString('vi-VN'); }
+  function pct(a, b) { return b > 0 ? Math.round(a / b * 1000) / 10 : 0; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var LIMIT_NAMES = { five_hour: 'Giới hạn 5 giờ', seven_day: 'Giới hạn 7 ngày', spend_limit: 'Hạn mức chi' };
+
+  function openSetup(note) {
+    $('setup').classList.add('open');
+    $('urlIn').value = store('td.url');
+    $('keyIn').value = store('td.key');
+    $('setupNote').textContent = note || '';
+  }
+
+  function render(res) {
+    if (!res || !res.ok) {
+      if (res && res.error === 'unauthorized') { openSetup('Sai hoặc thiếu mã xem (VIEW_KEY).'); $('ago').textContent = 'cần mã xem'; }
+      return;
+    }
+    var s = res.snapshot;
+    if (!s) { $('ago').textContent = 'chưa có dữ liệu — chạy /token-meter sync'; return; }
+    lastAt = s.receivedAt || s.updatedAt || 0;
+
+    var used = s.session.tokens.total;
+    $('used').textContent = fmt(used); $('used').title = full(used) + ' token';
+    $('usedPct').textContent = s.budget ? s.budget.percentUsed + '%' : (s.context.percent ? s.context.percent + '% context' : '');
+    var t = s.session.tokens;
+    $('usedSplit').textContent = 'vào ' + full(t.input) + ' · ra ' + full(t.output) + ' · cache ' + full(t.cacheRead + t.cacheWrite);
+    $('cost').textContent = s.session.costUsd != null ? 'Chi phí: $' + Number(s.session.costUsd).toFixed(2) : '';
+
+    var leftN, leftP, what;
+    if (s.budget) {
+      leftN = s.budget.remaining; leftP = Math.round((100 - s.budget.percentUsed) * 10) / 10;
+      what = 'theo ngân sách ' + full(s.budget.tokens) + ' token';
+    } else {
+      leftN = Math.max(0, s.context.window - s.context.tokens); leftP = Math.round((100 - s.context.percent) * 10) / 10;
+      what = 'context còn trống / ' + full(s.context.window) + ' token';
+    }
+    $('left').textContent = fmt(leftN); $('left').title = full(leftN) + ' token';
+    $('leftPct').textContent = leftP + '%';
+    $('leftBar').style.width = (100 - leftP) + '%';
+    $('leftBarWrap').className = 'bar' + (leftP < 15 ? ' warn' : '');
+    $('leftWhat').textContent = what + (s.budget ? ' · context ' + (Math.round((100 - s.context.percent) * 10) / 10) + '% trống' : '');
+
+    $('limits').innerHTML = (s.limits || []).map(function (l) {
+      var left = Math.round((100 - l.percentUsed) * 10) / 10;
+      var reset = l.resetsAt ? ' · reset ' + new Date(l.resetsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+      return '<div class="row"><span>' + esc(LIMIT_NAMES[l.kind] || l.kind) + '</span><span>' + left + '% còn' + reset + '</span></div>' +
+             '<div class="bar' + (left < 15 ? ' warn' : '') + '"><i style="width:' + l.percentUsed + '%"></i></div>';
+    }).join('');
+
+    var task = s.task || s.lastTask;
+    var st = $('taskStatus');
+    if (task) {
+      st.textContent = s.task ? 'đang chạy' : 'gần nhất'; st.className = 'status ' + (s.task ? 'run' : 'idle');
+      $('taskTok').textContent = fmt(task.tokens.total); $('taskTok').title = full(task.tokens.total) + ' token';
+      $('taskPct').textContent = pct(task.tokens.total, used) + '% phiên';
+      var secs = Math.round(((task.endedAt || Date.now()) - task.startedAt) / 1000);
+      $('taskMeta').textContent = task.steps + ' lượt gọi model · ' + task.tools + ' tool · ' + secs + 's';
+      $('skills').innerHTML = (task.skills || []).length
+        ? task.skills.map(function (k) { return '<span class="chip">' + esc(k) + '</span>'; }).join('')
+        : '<span class="sub">Không dùng skill</span>';
+    } else {
+      st.textContent = 'chưa có'; st.className = 'status idle';
+      $('taskTok').textContent = '—'; $('taskPct').textContent = ''; $('taskMeta').textContent = ''; $('skills').innerHTML = '';
+    }
+
+    var ext = s.extensions || {};
+    var keys = Object.keys(ext).filter(function (k) { return ext[k] !== ''; });
+    $('ext').className = keys.length ? '' : 'empty';
+    $('ext').innerHTML = keys.length
+      ? keys.map(function (k) { return '<div class="row"><span>' + esc(k) + '</span><span>' + esc(ext[k]) + '</span></div>'; }).join('')
+      : 'Chưa có mục mở rộng.';
+
+    renderTasks(s, res.tasks || []);
+    tick();
+  }
+
+  function renderTasks(s, done) {
+    var list = (s.task ? [s.task] : []).concat(done);
+    var box = $('tasks');
+    if (!list.length) { box.className = 'empty'; box.textContent = 'Chưa có task nào hoàn thành.'; return; }
+    var max = Math.max.apply(null, list.map(function (t) { return t.tokens.total; })) || 1;
+    var total = s.session.tokens.total || 1;
+    box.className = 'tl';
+    box.innerHTML = list.map(function (t) {
+      var tc = t.toolCounts || {};
+      var tools = Object.keys(tc).sort(function (a, b) { return tc[b] - tc[a]; })
+        .slice(0, 4).map(function (k) { return esc(k) + '×' + tc[k]; }).join(' · ');
+      var when = new Date(t.startedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      var secs = Math.round(((t.endedAt || Date.now()) - t.startedAt) / 1000);
+      var meta = [when, secs + 's', t.steps + ' lượt gọi'];
+      if (t.agentTokens) meta.push('subagent ' + fmt(t.agentTokens));
+      if (t.skills && t.skills.length) meta.push('skill: ' + t.skills.map(esc).join(', '));
+      if (tools) meta.push(tools);
+      return '<div class="ti' + (t.status === 'running' ? ' run' : '') + '">' +
+        '<div class="what" title="' + esc(t.label || '') + '">' + esc(t.label || '(ẩn nội dung)') + '</div>' +
+        '<div class="num" title="' + full(t.tokens.total) + ' token">' + fmt(t.tokens.total) + ' · ' + pct(t.tokens.total, total) + '%</div>' +
+        '<div class="mbar"><i style="width:' + (t.tokens.total / max * 100).toFixed(1) + '%"></i></div>' +
+        '<div class="meta">' + meta.join(' · ') + '</div></div>';
+    }).join('');
+  }
+
+  function tick() {
+    if (!lastAt) return;
+    var s = Math.round((Date.now() - lastAt) / 1000);
+    $('ago').textContent = 'cập nhật ' + (s < 60 ? s + ' giây' : Math.round(s / 60) + ' phút') + ' trước';
+    $('dot').className = 'dot' + (s > 120 ? ' off' : '');
+  }
+
+  function load() {
+    var url = store('td.url');
+    if (!url) { $('ago').textContent = 'chưa kết nối'; openSetup('Dán URL /exec của web app để bắt đầu.'); return; }
+    var q = url + (url.indexOf('?') < 0 ? '?' : '&') + 'format=json&key=' + encodeURIComponent(store('td.key'));
+    fetch(q, { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(render)
+      .catch(function () { $('ago').textContent = 'mất kết nối'; $('dot').className = 'dot off'; });
+  }
+
+  $('setupBtn').onclick = function () { $('setup').classList.contains('open') ? $('setup').classList.remove('open') : openSetup(''); };
+  $('saveBtn').onclick = function () {
+    store('td.url', $('urlIn').value.trim());
+    store('td.key', $('keyIn').value.trim());
+    $('setup').classList.remove('open');
+    load();
+  };
+  $('miniBtn').onclick = function () { store('td.mini', store('td.mini') === '1' ? '0' : '1'); applyMini(); };
+  $('linkBtn').onclick = function () {
+    var link = location.origin + location.pathname + '#u=' + encodeURIComponent(store('td.url')) + (store('td.key') ? '&k=' + encodeURIComponent(store('td.key')) : '');
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(
+      function () { $('setupNote').textContent = 'Đã sao chép. Mở link này trên máy khác để cài app đã kết nối sẵn.'; },
+      function () { $('setupNote').textContent = link; });
+  };
+
+  // Install: Android/Chrome/Edge show a button; iOS needs Share → Add to Home Screen.
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; $('installBtn').hidden = false; });
+  $('installBtn').onclick = function () {
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    deferredInstall.userChoice.finally(function () { deferredInstall = null; $('installBtn').hidden = true; });
+  };
+  var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (isIos && !isStandalone) $('iosHint').hidden = false;
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+  load();
+  setInterval(load, REFRESH_MS);
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
