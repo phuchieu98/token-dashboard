@@ -1,7 +1,7 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.1",
   "date": "2026-11-19",
   "notes": [
-    "Nút làm mới tròn ở góc trên bên phải: bấm để lấy số liệu mới nhất ngay, biểu tượng quay trong lúc tải"
+    "Nút \"Làm mới\" mới: bấm là Claude Code trên máy gửi số liệu mới nhất ngay (cần plugin token-meter 0.2.3), nút quay đến khi số mới về rồi báo \"Đã cập nhật\""
   ]
 }
