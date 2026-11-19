@@ -1,7 +1,7 @@
 // Token Dashboard service worker: the app shell works offline; data always comes fresh.
 // A new release changes CACHE (and version.json); the page shows "Cập nhật ngay" and,
 // when pressed, tells this worker to take over, then reloads.
-const CACHE = 'token-dash-v15';
+const CACHE = 'token-dash-v16';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

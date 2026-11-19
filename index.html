@@ -253,6 +253,12 @@
   .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
   .center { text-align: center; justify-content: center; }
   body.is-mobile .pc-only { display: none; }
+  .rfbtn { width: 34px; height: 34px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .rfbtn svg { width: 17px; height: 17px; }
+  .rfbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .rfbtn.spin svg { animation: rfspin .8s linear infinite; }
+  .rfbtn.ok { border-color: var(--teal); color: var(--teal); }
+  @keyframes rfspin { to { transform: rotate(360deg); } }
   #widgetBtn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   #deviceChip { white-space: nowrap; }
   body.is-mobile #deviceChip { display: none; }
@@ -363,6 +369,7 @@
       <span class="live"><span id="dot" class="dot off"></span><span id="ago">đang tải…</span></span>
       <span class="chip" id="deviceChip"></span>
       <button class="btn" id="widgetBtn" hidden title="Mở cửa sổ nhỏ luôn nổi, kéo tới góc màn hình tuỳ ý">📌 Treo góc màn hình</button>
+      <button class="btn rfbtn" id="refreshBtn" title="Làm mới: lấy số liệu mới nhất ngay" aria-label="Làm mới số liệu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
     </div>
   </header>
 
@@ -817,7 +824,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.9';
+  var APP_VERSION = '1.6.0';
   // Google sign-in popup (works with several Google accounts in one browser).
   var GOOGLE_CLIENT_ID = '1082362062556-9evscenk845fvsqm2hog1uhqo5ejr66s.apps.googleusercontent.com';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
@@ -1284,16 +1291,35 @@
     if (!document.querySelector('[data-view="accounts"]').hidden) renderSessions();
   }
 
+  var loading = null;
   function load() {
-    if (!store('td.token')) { showLoggedOut(''); return; }
-    if (busy) return;
+    if (!store('td.token')) { showLoggedOut(''); return Promise.resolve(); }
+    if (busy && loading) return loading;
     busy = true;
-    api({ action: 'get', token: store('td.token'), device: store('td.view') || 'all' })
+    loading = api({ action: 'get', token: store('td.token'), device: store('td.view') || 'all' })
       .then(render)
-      .catch(function () { $('ago').textContent = 'mất kết nối'; $('dot').className = 'dot off'; })
-      .finally(function () { busy = false; });
+      .catch(function (err) { $('ago').textContent = 'mất kết nối'; $('dot').className = 'dot off'; throw err; })
+      .finally(function () { busy = false; loading = null; });
+    loading.catch(function () {});
+    return loading;
   }
   function restartTimer() { if (timer) clearInterval(timer); timer = setInterval(load, Number(pref('refresh', '5')) * 1000); }
+
+  // Round refresh button: fetch the newest numbers now and restart the auto-refresh clock.
+  $('refreshBtn').onclick = function () {
+    var b = this;
+    if (b.classList.contains('spin')) return;
+    b.classList.remove('ok'); b.classList.add('spin');
+    var started = Date.now();
+    var job = busy && loading ? loading.then(load, load) : load();
+    restartTimer();
+    Promise.resolve(job).then(function () { return true; }, function () { return false; }).then(function (ok) {
+      setTimeout(function () {
+        b.classList.remove('spin');
+        if (ok) { b.classList.add('ok'); setTimeout(function () { b.classList.remove('ok'); }, 1200); }
+      }, Math.max(0, 700 - (Date.now() - started)));
+    });
+  };
 
   $('acctSel').onchange = function () { store('td.view', this.value); load(); };
   $('accounts').onclick = function (e) { var row = e.target.closest('.acc'); if (row) { store('td.view', row.dataset.acc); load(); } };

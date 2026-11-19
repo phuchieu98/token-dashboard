@@ -1,7 +1,7 @@
 {
-  "version": "1.5.9",
+  "version": "1.6.0",
   "date": "2026-11-19",
   "notes": [
-    "Thẻ mới \"Phiên chat hiện tại (5 giờ)\": đếm ngược thời gian còn lại của phiên, thời gian chat còn dùng được, token đã dùng và còn lại trong phiên"
+    "Nút làm mới tròn ở góc trên bên phải: bấm để lấy số liệu mới nhất ngay, biểu tượng quay trong lúc tải"
   ]
 }
