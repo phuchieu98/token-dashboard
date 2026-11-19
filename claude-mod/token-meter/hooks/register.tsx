@@ -8,6 +8,8 @@ const PANE = 'token-meter'
 const DEFAULT_ENDPOINT =
   'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec'
 const SYNC_EVERY_MS = 20_000
+// While idle, how often to ask whether the app's refresh button is waiting for fresh numbers.
+const POLL_EVERY_MS = 8_000
 
 const ZERO: Tokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 }
 
@@ -137,6 +139,8 @@ function withBudget(s: Snapshot, budget: number | undefined): Snapshot {
 let isDirty = false
 let lastSyncNote = 'chưa cấu hình'
 let skillsSent = false
+let lastSyncAt = 0
+let ticking = false
 
 // Chat time and tokens per limit window live in the store, so they add up across sessions.
 async function addActivity($: Dollar, ms: number, tokens: number): Promise<void> {
@@ -272,6 +276,7 @@ async function sync($: Dollar, force = false): Promise<string> {
       body,
     })
     isDirty = false
+    lastSyncAt = await $.clock.now()
     let res: { ok?: boolean; error?: string } = {}
 
     try {
@@ -294,6 +299,39 @@ async function sync($: Dollar, force = false): Promise<string> {
   }
 
   return lastSyncNote
+}
+
+// One timer beat: send when there is something new (at most every SYNC_EVERY_MS);
+// otherwise ask the server whether the app's refresh button is waiting, and answer at once.
+async function tick($: Dollar): Promise<void> {
+  if (ticking) {
+    return
+  }
+  ticking = true
+  try {
+    const now = await $.clock.now()
+
+    if (isDirty && now - lastSyncAt >= SYNC_EVERY_MS) {
+      await sync($)
+
+      return
+    }
+    const deviceKey = await $.store.get('deviceKey')
+
+    if (typeof deviceKey !== 'string' || deviceKey === '') {
+      return
+    }
+    const res = await post($, { action: 'poll', deviceKey })
+
+    if (res.ok && res.want === true) {
+      await refreshUsage($)
+      await sync($, true)
+    }
+  } catch {
+    // A failed poll is retried on the next beat.
+  } finally {
+    ticking = false
+  }
 }
 
 // Shared by `/token-meter link` and the `link` tool Claude can call.
@@ -383,8 +421,8 @@ export const register: Register = on => {
     await refreshUsage($)
     await addActivity($, 0, 0)
     void $.ui.open({ id: PANE, title: 'Token' })
-    $.clock.every(SYNC_EVERY_MS, () => {
-      void sync($)
+    $.clock.every(POLL_EVERY_MS, () => {
+      void tick($)
     })
 
     return next(e)
