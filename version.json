@@ -1,9 +1,7 @@
 {
-  "version": "1.5.7",
+  "version": "1.5.8",
   "date": "2026-11-19",
   "notes": [
-    "Mục \"Skill đã cài\": danh sách cuộn được, skill dùng nhiều nhất ở trên cùng kèm số lần dùng",
-    "Mô tả tính năng của 149 skill đã được Việt hoá (vẫn xem được bản gốc tiếng Anh)",
-    "Cần plugin token-meter 0.2.2 để đếm số lần dùng skill"
+    "Mục Tải xuống: thêm bộ cài cho máy tính Windows (.zip) - tạo lối tắt Token Dashboard và cài plugin token-meter cho Claude Code"
   ]
 }

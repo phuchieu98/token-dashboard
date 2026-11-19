@@ -697,6 +697,18 @@
       <div class="actions"><button class="btn primary" id="installBtn2">Cài app ngay</button></div>
     </div>
 
+    <div class="card">
+      <h2>Bộ cài cho máy tính Windows (.zip)</h2>
+      <p style="margin-top:0">Một lần bấm: tạo lối tắt <b>Token Dashboard</b> trên Desktop và Start Menu, và cài plugin <b>token-meter</b> cho Claude Code trên máy đó.</p>
+      <ol style="margin:0 0 4px;padding-left:20px;line-height:1.7">
+        <li>Tải file zip bên dưới và <b>giải nén</b>.</li>
+        <li>Bấm đúp <code>Cai dat Token Dashboard.cmd</code>. Nếu Windows hỏi, chọn <b>More info → Run anyway</b>.</li>
+        <li>Mở lại Claude Code, rồi liên kết theo mục <a href="#" data-go="accounts">Liên kết tài khoản</a>.</li>
+      </ol>
+      <div class="hint">Gỡ cài đặt: bấm đúp <code>Go cai dat.cmd</code> trong cùng thư mục. Hướng dẫn đầy đủ trong <code>HUONG-DAN.txt</code>.</div>
+      <div class="actions"><a class="btn primary" href="TokenDashboard-PC.zip" download="TokenDashboard-PC.zip">⬇ Tải bộ cài cho PC (.zip, 11 KB)</a></div>
+    </div>
+
     <div class="card" id="pcModes" hidden>
       <h2>Trên máy tính có 2 dạng</h2>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
@@ -794,7 +806,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.7';
+  var APP_VERSION = '1.5.8';
   // Google sign-in popup (works with several Google accounts in one browser).
   var GOOGLE_CLIENT_ID = '1082362062556-9evscenk845fvsqm2hog1uhqo5ejr66s.apps.googleusercontent.com';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
