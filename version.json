@@ -1,7 +1,7 @@
 {
-  "version": "1.5.8",
+  "version": "1.5.9",
   "date": "2026-11-19",
   "notes": [
-    "Mục Tải xuống: thêm bộ cài cho máy tính Windows (.zip) - tạo lối tắt Token Dashboard và cài plugin token-meter cho Claude Code"
+    "Thẻ mới \"Phiên chat hiện tại (5 giờ)\": đếm ngược thời gian còn lại của phiên, thời gian chat còn dùng được, token đã dùng và còn lại trong phiên"
   ]
 }

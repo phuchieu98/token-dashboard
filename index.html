@@ -438,6 +438,17 @@
       </div>
 
       <div class="card">
+        <h2>Phiên chat hiện tại (5 giờ)</h2>
+        <div class="sub" id="sessRange">—</div>
+        <div class="row"><span>Phiên còn lại trước khi đặt lại</span><b class="mono" id="sessLeft">—</b></div>
+        <div class="row"><span>Thời gian chat còn dùng được</span><b class="mono" id="sessChat">—</b></div>
+        <div class="row"><span>Đã dùng trong phiên</span><span id="sessUsed">—</span></div>
+        <div class="bar" id="sessBarWrap"><i id="sessBar"></i></div>
+        <div class="row"><span>Token còn lại trong phiên (ước tính)</span><b id="sessLeftTok">—</b></div>
+        <div class="sub" id="sessNote"></div>
+      </div>
+
+      <div class="card">
         <h2>Chu kỳ tuần</h2>
         <div class="sub" id="weekRange">—</div>
         <div class="row"><span>Token còn lại (ước tính)</span><b id="weekLeftTok">—</b></div>
@@ -806,7 +817,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.8';
+  var APP_VERSION = '1.5.9';
   // Google sign-in popup (works with several Google accounts in one browser).
   var GOOGLE_CLIENT_ID = '1082362062556-9evscenk845fvsqm2hog1uhqo5ejr66s.apps.googleusercontent.com';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
@@ -988,7 +999,8 @@
     $('limits').innerHTML = ''; $('skills').innerHTML = ''; $('leftBar').style.width = '0';
     $('tasks').className = 'empty'; $('tasks').textContent = 'Chưa có task nào hoàn thành.';
     $('taskStatus').textContent = '—'; $('taskStatus').className = 'status idle';
-    ['weekRange', 'weekLeftTok', 'weekUsed', 'weekTime'].forEach(function (id) { $(id).textContent = '—'; });
+    ['weekRange', 'weekLeftTok', 'weekUsed', 'weekTime', 'sessRange', 'sessLeft', 'sessChat', 'sessUsed', 'sessLeftTok'].forEach(function (id) { $(id).textContent = '—'; });
+    $('sessNote').textContent = ''; $('sessBar').style.width = '0'; delete $('sessLeft').dataset.until;
     $('weekNote').textContent = ''; $('weekBar').style.width = '0';
     $('resets').className = 'empty'; $('resets').textContent = 'Chưa có dữ liệu hạn mức.';
     $('tipLive').hidden = true;
@@ -1199,6 +1211,29 @@
     var five = act.five, fk = L5 && five ? timeLeft(five.activeMs, L5.percentUsed) : null;
     win = { week: wk, five: fk, at: now, running: !!s.task };
 
+    // Current 5-hour session: countdown to its reset, what it has used, and what is left.
+    var sEnd = L5 && L5.resetsAt ? Date.parse(L5.resetsAt) : (five ? five.end : null);
+    var sStart = sEnd ? sEnd - LIMIT_SPAN.five_hour : (five ? five.start : null);
+    var sPct = L5 ? L5.percentUsed : null, sFull = sPct != null && sPct >= 100;
+    $('sessRange').textContent = sEnd
+      ? 'Từ ' + fmtWhen(sStart) + ' đến ' + fmtWhen(sEnd) + from
+      : 'Chưa có phiên 5 giờ nào đang chạy.';
+    if (sEnd && sEnd > now) $('sessLeft').dataset.until = sEnd; else delete $('sessLeft').dataset.until;
+    $('sessLeft').textContent = sEnd && sEnd > now ? fmtDur(sEnd - now) : '—';
+    $('sessChat').textContent = sFull ? '00:00:00' : fmtDur(fk);
+    $('sessUsed').textContent = fmt((five && five.tokens) || 0) + ' token' + (sPct != null ? ' · ' + sPct + '%' : '') +
+      ' · chat ' + fmtDur((five && five.activeMs) || 0);
+    $('sessBar').style.width = Math.min(100, sPct || 0) + '%';
+    $('sessBarWrap').className = 'bar' + (sPct != null && sPct > 85 ? ' warn' : '');
+    var sLeftTok = sPct > 0 && five && five.tokens > 0 ? five.tokens * (100 - sPct) / sPct : null;
+    $('sessLeftTok').textContent = sLeftTok == null ? '—' : fmt(sLeftTok) + ' · ' + (Math.round((100 - sPct) * 10) / 10) + '%';
+    $('sessLeftTok').title = sLeftTok == null ? '' : full(Math.round(sLeftTok)) + ' token';
+    $('sessNote').textContent = !L5
+      ? 'Gói hiện tại không báo hạn mức 5 giờ (ví dụ đăng nhập bằng API key).'
+      : sFull ? 'Đã hết hạn mức phiên này · dùng lại được lúc ' + fmtWhen(sEnd) + '.'
+      : fk == null ? 'Cần thêm dữ liệu: dùng Claude một lúc để app ước tính thời gian chat còn lại.'
+      : 'Ước tính theo tốc độ dùng trong phiên · đang chạy task thì tự trừ dần.';
+
     var rows = [[L5, 'Giới hạn 5 giờ', 'five'], [L7, 'Giới hạn tuần (7 ngày)', 'week']].filter(function (r) { return r[0]; });
     $('resets').className = rows.length ? '' : 'empty';
     $('resets').innerHTML = (rows.length && s.limitsFrom ? '<div class="sub">Hạn mức của tài khoản ' + esc(s.limitsFrom) + ' (gửi số liệu gần nhất)</div>' : '') +
@@ -1225,6 +1260,7 @@
     if (!win) return;
     var now = Date.now(), spent = win.running ? now - win.at : 0;
     $('weekTime').textContent = fmtDur(win.week == null ? null : win.week - spent);
+    if (win.five != null && $('sessChat').textContent !== '00:00:00') $('sessChat').textContent = fmtDur(win.five - spent);
     $$('[data-until]').forEach(function (e) { e.textContent = fmtDur(Number(e.dataset.until) - now); });
     $$('[data-left]').forEach(function (e) { var v = win[e.dataset.left]; e.textContent = fmtDur(v == null ? null : v - spent); });
   }
