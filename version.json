@@ -1,8 +1,8 @@
 {
-  "version": "1.5.5",
+  "version": "1.5.6",
   "date": "2026-11-19",
   "notes": [
-    "Sửa đăng nhập Google trên PC: dùng cửa sổ chọn tài khoản của Google, chạy được khi trình duyệt đăng nhập nhiều tài khoản Google",
-    "Thêm trang Chính sách quyền riêng tư"
+    "Mục mới \"Skill đã cài\" trong menu T: danh sách skill trên các máy Claude đã liên kết và tính năng của từng skill, có ô tìm kiếm",
+    "Cần plugin token-meter 0.2.1 trở lên để gửi danh sách skill"
   ]
 }

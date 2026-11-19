@@ -134,142 +134,236 @@ function withBudget(s: Snapshot, budget: number | undefined): Snapshot {
   }
 }
 
-export const register: Register = on => {
-  let isDirty = false
-  let lastSyncNote = 'chưa cấu hình'
+let isDirty = false
+let lastSyncNote = 'chưa cấu hình'
+let skillsSent = false
 
-  // Chat time and tokens per limit window live in the store, so they add up across sessions.
-  async function addActivity($: Dollar, ms: number, tokens: number): Promise<void> {
-    const saved = (await $.store.get('activity')) as Snapshot['activity'] | undefined
-    const s = await read($, snap)
-    const now = await $.clock.now()
-    const activity = {
-      week: roll(saved?.week, windowFor(s.limits, 'seven_day', now), ms, tokens),
-      five: roll(saved?.five, windowFor(s.limits, 'five_hour', now), ms, tokens),
-    }
-    await $.store.set('activity', activity)
-    await update($, snap, x => ({ ...x, activity }))
+// Chat time and tokens per limit window live in the store, so they add up across sessions.
+async function addActivity($: Dollar, ms: number, tokens: number): Promise<void> {
+  const saved = (await $.store.get('activity')) as Snapshot['activity'] | undefined
+  const s = await read($, snap)
+  const now = await $.clock.now()
+  const activity = {
+    week: roll(saved?.week, windowFor(s.limits, 'seven_day', now), ms, tokens),
+    five: roll(saved?.five, windowFor(s.limits, 'five_hour', now), ms, tokens),
   }
+  await $.store.set('activity', activity)
+  await update($, snap, x => ({ ...x, activity }))
+}
 
-  async function budgetOf($: Dollar): Promise<number | undefined> {
-    const v = await $.store.get('budget')
+async function budgetOf($: Dollar): Promise<number | undefined> {
+  const v = await $.store.get('budget')
 
-    return typeof v === 'number' ? v : undefined
-  }
+  return typeof v === 'number' ? v : undefined
+}
 
-  async function refreshUsage($: Dollar): Promise<void> {
-    const u = await $.session.usage()
-    const budget = await budgetOf($)
-    const limits: Limit[] = u.rateLimits.map(r => ({ kind: r.kind, percentUsed: r.percentUsed, resetsAt: r.resetsAt }))
-    const now = await $.clock.now()
-    await update($, snap, s =>
-      withBudget(
-        {
-          ...s,
-          updatedAt: now,
-          session: { ...s.session, startedAt: u.startedAt, costUsd: u.cost?.usd },
-          context: { tokens: u.context.tokens ?? 0, window: u.context.window, percent: u.context.percent ?? 0 },
-          limits,
-        },
-        budget,
-      ),
-    )
-    isDirty = true
-  }
-
-  async function endpoint($: Dollar): Promise<string> {
-    const url = await $.store.get('endpoint')
-
-    return typeof url === 'string' && url !== '' ? url : DEFAULT_ENDPOINT
-  }
-
-  async function post($: Dollar, payload: unknown): Promise<{ ok?: boolean; error?: string; [k: string]: unknown }> {
-    const r = await $.http.fetch(await endpoint($), {
-      method: 'POST',
-      headers: { 'content-type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-    })
-
-    try {
-      return JSON.parse(r.text) as { ok?: boolean; error?: string }
-    } catch {
-      return { ok: false, error: `HTTP ${r.status}` }
-    }
-  }
-
-  // The signed-in Claude account's email, from the person's own config file, as a link's default name.
-  async function claudeEmail($: Dollar): Promise<string | undefined> {
-    const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
-    const dir = (await $.env.get('CLAUDE_CONFIG_DIR')) ?? home
-
-    if (dir === undefined) {
-      return undefined
-    }
-    try {
-      const cfg = JSON.parse(await $.fs.read(`${dir}/.claude.json`)) as { oauthAccount?: { emailAddress?: string } }
-
-      return cfg.oauthAccount?.emailAddress
-    } catch {
-      return undefined
-    }
-  }
-
-  async function sync($: Dollar, force = false): Promise<string> {
-    if (!isDirty && !force) {
-      return lastSyncNote
-    }
-    const deviceKey = await $.store.get('deviceKey')
-
-    if (typeof deviceKey !== 'string' || deviceKey === '') {
-      lastSyncNote = 'chưa liên kết (mở app → Liên kết tài khoản → lấy mã, rồi /token-meter link <mã>)'
-
-      return lastSyncNote
-    }
-    const s = await read($, snap)
-    const link = await $.store.get('link')
-    // `/token-meter private on` keeps what each task was about on this machine.
-    const isPrivate = (await $.store.get('private')) === true
-    const strip = (t: Task): Task => (isPrivate ? { ...t, label: '' } : t)
-    const body = JSON.stringify({
-      deviceKey,
-      link: typeof link === 'string' ? link : '',
-      snapshot: {
+async function refreshUsage($: Dollar): Promise<void> {
+  const u = await $.session.usage()
+  const budget = await budgetOf($)
+  const limits: Limit[] = u.rateLimits.map(r => ({ kind: r.kind, percentUsed: r.percentUsed, resetsAt: r.resetsAt }))
+  const now = await $.clock.now()
+  await update($, snap, s =>
+    withBudget(
+      {
         ...s,
-        task: s.task && strip(s.task),
-        lastTask: s.lastTask && strip(s.lastTask),
-        history: s.history.map(strip),
+        updatedAt: now,
+        session: { ...s.session, startedAt: u.startedAt, costUsd: u.cost?.usd },
+        context: { tokens: u.context.tokens ?? 0, window: u.context.window, percent: u.context.percent ?? 0 },
+        limits,
       },
-    })
+      budget,
+    ),
+  )
+  isDirty = true
+}
 
-    try {
-      const r = await $.http.fetch(await endpoint($), {
-        method: 'POST',
-        headers: { 'content-type': 'text/plain;charset=utf-8' },
-        body,
-      })
-      isDirty = false
-      let res: { ok?: boolean; error?: string } = {}
+async function endpoint($: Dollar): Promise<string> {
+  const url = await $.store.get('endpoint')
 
-      try {
-        res = JSON.parse(r.text) as { ok?: boolean; error?: string }
-      } catch {
-        res = { ok: false, error: `HTTP ${r.status}` }
-      }
-      if (res.error === 'unlinked') {
-        await $.store.set('deviceKey', '')
-        lastSyncNote = 'liên kết đã bị huỷ trong app — tạo mã mới để liên kết lại'
-        $.ui.toast('Token meter: liên kết với dashboard đã bị huỷ.')
-      } else {
-        lastSyncNote = res.ok ? `đã gửi ${new Date(await $.clock.now()).toLocaleTimeString()}` : `lỗi: ${res.error ?? r.status}`
-      }
-    } catch (err) {
-      lastSyncNote = `lỗi mạng: ${String(err).slice(0, 60)}`
-    }
+  return typeof url === 'string' && url !== '' ? url : DEFAULT_ENDPOINT
+}
+
+async function post($: Dollar, payload: unknown): Promise<{ ok?: boolean; error?: string; [k: string]: unknown }> {
+  const r = await $.http.fetch(await endpoint($), {
+    method: 'POST',
+    headers: { 'content-type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  })
+
+  try {
+    return JSON.parse(r.text) as { ok?: boolean; error?: string }
+  } catch {
+    return { ok: false, error: `HTTP ${r.status}` }
+  }
+}
+
+// The signed-in Claude account's email, from the person's own config file, as a link's default name.
+async function claudeEmail($: Dollar): Promise<string | undefined> {
+  const home = (await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME'))
+  const dir = (await $.env.get('CLAUDE_CONFIG_DIR')) ?? home
+
+  if (dir === undefined) {
+    return undefined
+  }
+  try {
+    const cfg = JSON.parse(await $.fs.read(`${dir}/.claude.json`)) as { oauthAccount?: { emailAddress?: string } }
+
+    return cfg.oauthAccount?.emailAddress
+  } catch {
+    return undefined
+  }
+}
+
+async function sync($: Dollar, force = false): Promise<string> {
+  if (!isDirty && !force) {
+    return lastSyncNote
+  }
+  const deviceKey = await $.store.get('deviceKey')
+
+  if (typeof deviceKey !== 'string' || deviceKey === '') {
+    lastSyncNote = 'chưa liên kết (mở app → Liên kết tài khoản → lấy mã, rồi /token-meter link <mã>)'
 
     return lastSyncNote
   }
+  const s = await read($, snap)
+  const link = await $.store.get('link')
+  // `/token-meter private on` keeps what each task was about on this machine.
+  const isPrivate = (await $.store.get('private')) === true
+  const strip = (t: Task): Task => (isPrivate ? { ...t, label: '' } : t)
+  // The installed skills go up once per session (they rarely change and the list is long).
+  let skills: { name: string; description: string; plugin: string }[] | undefined
+
+  if (!skillsSent) {
+    try {
+      const all = await $.command.list()
+      skills = all
+        .filter(c => (c.source === 'plugin' || c.source === 'user') && c.name !== 'token-meter')
+        .map(c => ({ name: c.name, description: (c.description ?? '').slice(0, 200), plugin: c.plugin ?? (c.source === 'user' ? 'cá nhân' : '') }))
+    } catch {
+      skills = undefined
+    }
+  }
+  const body = JSON.stringify({
+    deviceKey,
+    skills,
+    link: typeof link === 'string' ? link : '',
+    snapshot: {
+      ...s,
+      task: s.task && strip(s.task),
+      lastTask: s.lastTask && strip(s.lastTask),
+      history: s.history.map(strip),
+    },
+  })
+
+  try {
+    const r = await $.http.fetch(await endpoint($), {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain;charset=utf-8' },
+      body,
+    })
+    isDirty = false
+    let res: { ok?: boolean; error?: string } = {}
+
+    try {
+      res = JSON.parse(r.text) as { ok?: boolean; error?: string }
+    } catch {
+      res = { ok: false, error: `HTTP ${r.status}` }
+    }
+    if (res.error === 'unlinked') {
+      await $.store.set('deviceKey', '')
+      lastSyncNote = 'liên kết đã bị huỷ trong app — tạo mã mới để liên kết lại'
+      $.ui.toast('Token meter: liên kết với dashboard đã bị huỷ.')
+    } else {
+      lastSyncNote = res.ok ? `đã gửi ${new Date(await $.clock.now()).toLocaleTimeString()}` : `lỗi: ${res.error ?? r.status}`
+      if (res.ok && skills !== undefined) {
+        skillsSent = true
+      }
+    }
+  } catch (err) {
+    lastSyncNote = `lỗi mạng: ${String(err).slice(0, 60)}`
+  }
+
+  return lastSyncNote
+}
+
+// Shared by `/token-meter link` and the `link` tool Claude can call.
+async function linkWithCode($: Dollar, code: string | undefined, name?: string): Promise<string> {
+  if (code === undefined || code.trim() === '') {
+    const linked = await $.store.get('linkedAs')
+
+    return typeof linked === 'string' && linked
+      ? `Đang liên kết: ${linked}. Huỷ: /token-meter unlink`
+      : 'Chưa liên kết. Mở app → menu T → Liên kết tài khoản → "Liên kết tài khoản Claude" để lấy mã, rồi chạy /token-meter link <mã> [tên].'
+  }
+  const label = (name ?? '').trim() || (await claudeEmail($)) || 'Claude Code'
+
+  try {
+    const res = await post($, { action: 'pairFinish', code: code.trim(), label })
+
+    if (!res.ok) {
+      return `Không liên kết được: ${res.error ?? 'lỗi không rõ'}`
+    }
+    await $.store.set('deviceKey', String(res.deviceKey))
+    await $.store.set('linkedAs', `"${String(res.label)}" → ${String(res.email)}`)
+  } catch (err) {
+    return `Không liên kết được: ${String(err).slice(0, 80)}`
+  }
+  isDirty = true
+  const note = await sync($, true)
+
+  return `Đã liên kết tài khoản Claude này với dashboard (${String(await $.store.get('linkedAs'))}). Gửi thử: ${note}`
+}
+
+export const register: Register = on => {
+  on('tool.run', { tool: 'mcp__token-meter__link' }, async ($, e) => {
+    const input = e as unknown as { code?: unknown; name?: unknown }
+    const code = typeof input.code === 'string' ? input.code : undefined
+    const name = typeof input.name === 'string' && input.name.trim() ? input.name.trim() : 'Claude Code'
+
+    if (code === undefined || code.trim() === '') {
+      const linked = await $.store.get('linkedAs')
+
+      return { result: typeof linked === 'string' && linked ? `Đang liên kết: ${linked}` : 'Chưa liên kết.' }
+    }
+    const saved = await $.store.get('endpoint')
+    const url = typeof saved === 'string' && saved !== '' ? saved : DEFAULT_ENDPOINT
+    let res: { ok?: boolean; error?: string; deviceKey?: unknown; label?: unknown; email?: unknown }
+
+    try {
+      const r = await $.http.fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'pairFinish', code: code.trim(), label: name }),
+      })
+
+      res = JSON.parse(r.text) as typeof res
+    } catch (err) {
+      return { result: `Không liên kết được: ${String(err).slice(0, 80)}` }
+    }
+    if (!res.ok) {
+      return { result: `Không liên kết được: ${res.error ?? 'lỗi không rõ'}` }
+    }
+    await $.store.set('deviceKey', String(res.deviceKey))
+    await $.store.set('linkedAs', `"${String(res.label)}" → ${String(res.email)}`)
+    isDirty = true
+
+    return { result: `Đã liên kết tài khoản Claude này với dashboard ("${String(res.label)}" → ${String(res.email)}). Số liệu gửi lên trong lần đồng bộ kế tiếp.` }
+  })
 
   on('session.start', async ($, e, next) => {
+    await $.tool.register({
+      name: 'link',
+      description:
+        'Link this Claude Code to the user\'s Token Dashboard account with a pairing code (format ABCD-EFGH) shown in the app under Liên kết tài khoản. Without a code, reports whether it is linked. Same as /token-meter link <code> [name].',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          code: { type: 'string', description: 'Pairing code from the app, e.g. ABCD-EFGH. Omit to check the link status.' },
+          name: { type: 'string', description: 'Optional name for this machine, e.g. PC.' },
+        },
+      },
+      isDeferred: false,
+    })
     await $.command.register({
       name: 'token-meter',
       description: 'Token meter: link <mã> [tên] | unlink | open | budget | sync | private | clear-history | url | ext',
@@ -436,33 +530,7 @@ export const register: Register = on => {
     if (cmd === 'link') {
       const [code, ...nameParts] = rest
 
-      if (code === undefined) {
-        const linked = await $.store.get('linkedAs')
-
-        return {
-          text:
-            typeof linked === 'string' && linked
-              ? `Đang liên kết: ${linked}. Huỷ: /token-meter unlink`
-              : 'Chưa liên kết. Mở app → menu T → Liên kết tài khoản → "Liên kết tài khoản Claude" để lấy mã, rồi chạy /token-meter link <mã> [tên].',
-        }
-      }
-      const label = nameParts.join(' ').trim() || (await claudeEmail($)) || 'Claude Code'
-
-      try {
-        const res = await post($, { action: 'pairFinish', code, label })
-
-        if (!res.ok) {
-          return { text: `Không liên kết được: ${res.error ?? 'lỗi không rõ'}` }
-        }
-        await $.store.set('deviceKey', String(res.deviceKey))
-        await $.store.set('linkedAs', `"${String(res.label)}" → ${String(res.email)}`)
-      } catch (err) {
-        return { text: `Không liên kết được: ${String(err).slice(0, 80)}` }
-      }
-      isDirty = true
-      const note = await sync($, true)
-
-      return { text: `Đã liên kết tài khoản Claude này với dashboard (${String(await $.store.get('linkedAs'))}). Gửi thử: ${note}` }
+      return { text: await linkWithCode($, code, nameParts.join(' ')) }
     }
     if (cmd === 'unlink') {
       await $.store.set('deviceKey', '')
@@ -553,11 +621,11 @@ export const register: Register = on => {
         )}
 
         {s.history.length > 0 && <Text bold>Token theo task</Text>}
-        {s.history.slice(0, 8).map(h => (
+        {s.history.slice(0, 8).map(task => (
           <Text>
-            {fmt(h.tokens.total).padStart(6)} {String(pct(h.tokens.total, s.session.tokens.total)).padStart(4)}%{' '}
-            {h.label.slice(0, 40)}
-            {topTools(h).length > 0 ? ` · ${topTools(h)}` : ''}
+            {fmt(task.tokens.total).padStart(6)} {String(pct(task.tokens.total, s.session.tokens.total)).padStart(4)}%{' '}
+            {task.label.slice(0, 40)}
+            {topTools(task).length > 0 ? ` · ${topTools(task)}` : ''}
           </Text>
         ))}
 

@@ -28,6 +28,11 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  .skgrp { font-size: 1em; margin: 18px 0 6px; text-transform: none; }
+  .skill { padding: 8px 0; border-top: 1px solid var(--line, rgba(127,127,127,.18)); }
+  .skill code { font-weight: 700; word-break: break-all; }
+  .skill .sub { margin-top: 2px; overflow-wrap: anywhere; }
+  #skillSearch { margin: 6px 0 4px; width: 100%; box-sizing: border-box; }
   html { background: var(--bg); }
   body {
     margin: 0; min-height: 100vh; color: var(--text);
@@ -335,6 +340,7 @@
   <button class="nav" data-go="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>Hồ sơ</button>
   <button class="nav" data-go="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 11h6M19 8v6"/></svg>Liên kết tài khoản</button>
   <button class="nav" data-go="download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Tải xuống</button>
+  <button class="nav" data-go="skills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>Skill đã cài</button>
   <button class="nav" data-go="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>Thông tin app &amp; tác giả</button>
   <div class="foot">Phiên bản <span class="appver"></span></div>
 </nav>
@@ -717,6 +723,15 @@
   </section>
 
   <!-- ===== Thông tin ===== -->
+  <section class="view" data-view="skills" hidden>
+    <div class="card">
+      <h2>Skill đã cài</h2>
+      <p class="hint" id="skillsNote">Danh sách skill trên các máy Claude đã liên kết và mỗi skill dùng để làm gì. Plugin token-meter gửi danh sách này mỗi phiên làm việc.</p>
+      <input class="f" id="skillSearch" type="search" placeholder="Tìm skill theo tên hoặc tính năng…" autocomplete="off">
+      <div id="skillList" class="empty">Chưa có dữ liệu.</div>
+    </div>
+  </section>
+
   <section class="view" data-view="about" hidden>
     <div class="card">
       <div style="display:flex;gap:14px;align-items:center">
@@ -768,14 +783,14 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.5';
+  var APP_VERSION = '1.5.6';
   // Google sign-in popup (works with several Google accounts in one browser).
   var GOOGLE_CLIENT_ID = '1082362062556-9evscenk845fvsqm2hog1uhqo5ejr66s.apps.googleusercontent.com';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
   // The same Apps Script deployed a second time as "Execute as: User accessing" — it reads the visitor's Google account.
   var DEFAULT_LOGIN_URL = 'https://script.google.com/macros/s/AKfycbxfSbGgeKFixSZXJ4mLa0AW-fI3I-MHE2OkKseFWk3PlGD7pTzZY7gFZPQjyvtGtT7O/exec';
   var ACCENTS = { '#8b7cff': 'Tím', '#3ee0b0': 'Xanh ngọc', '#ff6bb5': 'Hồng', '#ffa24c': 'Cam', '#4aa8ff': 'Xanh dương' };
-  var VIEW_TITLES = { home: 'Token Dashboard', theme: 'Cài đặt giao diện', accounts: 'Liên kết tài khoản', download: 'Tải xuống', about: 'Thông tin' };
+  var VIEW_TITLES = { home: 'Token Dashboard', theme: 'Cài đặt giao diện', accounts: 'Liên kết tài khoản', download: 'Tải xuống', skills: 'Skill đã cài', about: 'Thông tin' };
   var lastAt = 0, lastRes = null, deferredInstall = null, timer = null, busy = false;
 
   function $(id) { return document.getElementById(id); }
@@ -926,6 +941,7 @@
     store('td.lastView', view);
     if (view === 'accounts') { renderSessions(); renderGuide(); }
     if (view === 'download') renderInstall();
+    if (view === 'skills') renderSkills();
     openMenu(false);
     window.scrollTo(0, 0);
   }
@@ -1028,6 +1044,7 @@
     }
     if ($('loginCancelWrap').hidden) $('loginPrompt').hidden = true;
     lastRes = res;
+    if (store('td.lastView') === 'skills') renderSkills();
     renderAccounts(res);
     renderSummary();
     updateWidget();
@@ -1262,6 +1279,34 @@
     store('td.loginUrl', l && l !== DEFAULT_LOGIN_URL ? l : '');
     $('loginNote').textContent = 'Đã lưu.';
   };
+
+  // ---------- installed skills (sent by the token-meter plugin) ----------
+  function renderSkills() {
+    var box = $('skillList');
+    if (!store('td.token')) { box.className = 'empty'; box.textContent = 'Đăng nhập trước để xem skill đã cài.'; return; }
+    var sk = lastRes && lastRes.skills;
+    if (!sk || !sk.list || !sk.list.length) {
+      box.className = 'empty';
+      box.textContent = (lastRes && (lastRes.devices || []).length)
+        ? 'Chưa nhận được danh sách skill. Mở một phiên Claude Code mới trên máy đã liên kết (plugin token-meter 0.2.1 trở lên) rồi đợi vài giây.'
+        : 'Chưa liên kết tài khoản Claude nào. Vào Liên kết tài khoản để liên kết trước.';
+      return;
+    }
+    var q = $('skillSearch').value.trim().toLowerCase();
+    var list = sk.list.filter(function (k) { return !q || (k.name + ' ' + k.description + ' ' + k.plugin).toLowerCase().indexOf(q) >= 0; });
+    var groups = {};
+    list.forEach(function (k) { var g = k.plugin || 'khác'; (groups[g] = groups[g] || []).push(k); });
+    var names = Object.keys(groups).sort(function (a, b) { return groups[b].length - groups[a].length || a.localeCompare(b); });
+    $('skillsNote').textContent = sk.list.length + ' skill · ' + names.length + ' nhóm · ' + agoText(sk.at) + '.';
+    box.className = list.length ? '' : 'empty';
+    box.innerHTML = list.length ? names.map(function (g) {
+      return '<h3 class="skgrp">' + esc(g) + ' <span class="sub">(' + groups[g].length + ')</span></h3>' +
+        groups[g].sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (k) {
+          return '<div class="skill"><code>/' + esc(k.name) + '</code><div class="sub">' + esc(k.description || 'Không có mô tả.') + '</div></div>';
+        }).join('');
+    }).join('') : 'Không có skill nào khớp "' + esc(q) + '".';
+  }
+  $('skillSearch').addEventListener('input', renderSkills);
 
   // ---------- accounts view: linked Claude accounts ----------
   var pairTimer = null;
