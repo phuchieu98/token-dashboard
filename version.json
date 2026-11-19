@@ -1,8 +1,9 @@
 {
-  "version": "1.5.6",
+  "version": "1.5.7",
   "date": "2026-11-19",
   "notes": [
-    "Mục mới \"Skill đã cài\" trong menu T: danh sách skill trên các máy Claude đã liên kết và tính năng của từng skill, có ô tìm kiếm",
-    "Cần plugin token-meter 0.2.1 trở lên để gửi danh sách skill"
+    "Mục \"Skill đã cài\": danh sách cuộn được, skill dùng nhiều nhất ở trên cùng kèm số lần dùng",
+    "Mô tả tính năng của 149 skill đã được Việt hoá (vẫn xem được bản gốc tiếng Anh)",
+    "Cần plugin token-meter 0.2.2 để đếm số lần dùng skill"
   ]
 }

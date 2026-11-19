@@ -28,10 +28,21 @@
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  .skgrp { font-size: 1em; margin: 18px 0 6px; text-transform: none; }
-  .skill { padding: 8px 0; border-top: 1px solid var(--line, rgba(127,127,127,.18)); }
-  .skill code { font-weight: 700; word-break: break-all; }
-  .skill .sub { margin-top: 2px; overflow-wrap: anywhere; }
+  .sklist { max-height: min(68vh, 720px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    margin-top: 8px; padding-right: 4px; border-top: 1px solid var(--line, rgba(127,127,127,.18)); }
+  .skill { padding: 10px 2px; border-bottom: 1px solid var(--line, rgba(127,127,127,.18)); }
+  .skhead { display: flex; align-items: center; gap: 8px; }
+  .skhead code { font-weight: 700; word-break: break-all; flex: 1; min-width: 0; }
+  .skrank { min-width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; font-size: .8em; font-weight: 700;
+    background: rgba(127,127,127,.15); flex: none; }
+  .skill.used .skrank { background: var(--accent); color: #fff; }
+  .skuses { flex: none; font-size: .82em; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgba(127,127,127,.15); white-space: nowrap; }
+  .skill.used .skuses { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .skdesc { margin: 4px 0 0 34px; line-height: 1.5; overflow-wrap: anywhere; }
+  .skmeta { margin: 6px 0 0 34px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; font-size: .85em; }
+  .sktag { padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(127,127,127,.3); opacity: .85; }
+  .skmeta details { flex-basis: 100%; }
+  .skmeta summary { cursor: pointer; opacity: .75; }
   #skillSearch { margin: 6px 0 4px; width: 100%; box-sizing: border-box; }
   html { background: var(--bg); }
   body {
@@ -726,7 +737,7 @@
   <section class="view" data-view="skills" hidden>
     <div class="card">
       <h2>Skill đã cài</h2>
-      <p class="hint" id="skillsNote">Danh sách skill trên các máy Claude đã liên kết và mỗi skill dùng để làm gì. Plugin token-meter gửi danh sách này mỗi phiên làm việc.</p>
+      <p class="hint" id="skillsNote">Danh sách skill trên các máy Claude đã liên kết, skill dùng nhiều nhất ở trên cùng, kèm số lần dùng và tính năng của từng skill.</p>
       <input class="f" id="skillSearch" type="search" placeholder="Tìm skill theo tên hoặc tính năng…" autocomplete="off">
       <div id="skillList" class="empty">Chưa có dữ liệu.</div>
     </div>
@@ -783,7 +794,7 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.6';
+  var APP_VERSION = '1.5.7';
   // Google sign-in popup (works with several Google accounts in one browser).
   var GOOGLE_CLIENT_ID = '1082362062556-9evscenk845fvsqm2hog1uhqo5ejr66s.apps.googleusercontent.com';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
@@ -1281,29 +1292,53 @@
   };
 
   // ---------- installed skills (sent by the token-meter plugin) ----------
+  // Vietnamese descriptions ship with the app (skills-vi.json); skills not in it show the original text.
+  var skillVi = null, skillViLoading = false;
+  function loadSkillVi() {
+    if (skillVi || skillViLoading) return;
+    skillViLoading = true;
+    fetch('skills-vi.json', { cache: 'no-cache' }).then(function (r) { return r.json(); })
+      .then(function (j) { skillVi = j; if (store('td.lastView') === 'skills') renderSkills(); })
+      .catch(function () { skillVi = { skills: {}, groups: {} }; })
+      .finally(function () { skillViLoading = false; });
+  }
+  function viOf(k) {
+    var d = skillVi && skillVi.skills;
+    if (!d) return '';
+    return d[k.name] || (k.name.indexOf(':') >= 0 ? d[k.name.split(':').pop()] : '') || '';
+  }
   function renderSkills() {
+    loadSkillVi();
     var box = $('skillList');
     if (!store('td.token')) { box.className = 'empty'; box.textContent = 'Đăng nhập trước để xem skill đã cài.'; return; }
     var sk = lastRes && lastRes.skills;
     if (!sk || !sk.list || !sk.list.length) {
       box.className = 'empty';
       box.textContent = (lastRes && (lastRes.devices || []).length)
-        ? 'Chưa nhận được danh sách skill. Mở một phiên Claude Code mới trên máy đã liên kết (plugin token-meter 0.2.1 trở lên) rồi đợi vài giây.'
+        ? 'Chưa nhận được danh sách skill. Mở một phiên Claude Code mới trên máy đã liên kết (plugin token-meter 0.2.2 trở lên) rồi đợi vài giây.'
         : 'Chưa liên kết tài khoản Claude nào. Vào Liên kết tài khoản để liên kết trước.';
       return;
     }
+    var groupsVi = (skillVi && skillVi.groups) || {};
     var q = $('skillSearch').value.trim().toLowerCase();
-    var list = sk.list.filter(function (k) { return !q || (k.name + ' ' + k.description + ' ' + k.plugin).toLowerCase().indexOf(q) >= 0; });
-    var groups = {};
-    list.forEach(function (k) { var g = k.plugin || 'khác'; (groups[g] = groups[g] || []).push(k); });
-    var names = Object.keys(groups).sort(function (a, b) { return groups[b].length - groups[a].length || a.localeCompare(b); });
-    $('skillsNote').textContent = sk.list.length + ' skill · ' + names.length + ' nhóm · ' + agoText(sk.at) + '.';
-    box.className = list.length ? '' : 'empty';
-    box.innerHTML = list.length ? names.map(function (g) {
-      return '<h3 class="skgrp">' + esc(g) + ' <span class="sub">(' + groups[g].length + ')</span></h3>' +
-        groups[g].sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (k) {
-          return '<div class="skill"><code>/' + esc(k.name) + '</code><div class="sub">' + esc(k.description || 'Không có mô tả.') + '</div></div>';
-        }).join('');
+    var list = sk.list.filter(function (k) {
+      return !q || (k.name + ' ' + k.description + ' ' + viOf(k) + ' ' + k.plugin + ' ' + (groupsVi[k.plugin] || '')).toLowerCase().indexOf(q) >= 0;
+    });
+    // Most used first; unused ones after, by name.
+    list.sort(function (a, b) { return (b.uses || 0) - (a.uses || 0) || a.name.localeCompare(b.name); });
+    var used = sk.list.filter(function (k) { return k.uses > 0; });
+    var total = used.reduce(function (n, k) { return n + k.uses; }, 0);
+    $('skillsNote').textContent = sk.list.length + ' skill đã cài · ' + used.length + ' skill đã dùng, tổng ' + total + ' lần · ' + agoText(sk.at) + '.';
+    box.className = list.length ? 'sklist' : 'sklist empty';
+    box.innerHTML = list.length ? list.map(function (k, i) {
+      var vi = viOf(k);
+      var desc = vi || k.description || 'Chưa có mô tả.';
+      var orig = vi && k.description ? '<details><summary>Bản gốc tiếng Anh</summary><div class="sub">' + esc(k.description) + '</div></details>' : '';
+      var grp = k.plugin ? '<span class="sktag">' + esc(groupsVi[k.plugin] || k.plugin) + '</span>' : '';
+      return '<div class="skill' + (k.uses ? ' used' : '') + '">' +
+        '<div class="skhead"><span class="skrank">' + (k.uses ? (i + 1) : '–') + '</span><code>/' + esc(k.name) + '</code>' +
+        '<span class="skuses">' + (k.uses ? k.uses + ' lần' : 'chưa dùng') + '</span></div>' +
+        '<div class="skdesc">' + esc(desc) + '</div>' + (grp || orig ? '<div class="skmeta">' + grp + orig + '</div>' : '') + '</div>';
     }).join('') : 'Không có skill nào khớp "' + esc(q) + '".';
   }
   $('skillSearch').addEventListener('input', renderSkills);

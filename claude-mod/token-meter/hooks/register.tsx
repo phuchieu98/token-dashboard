@@ -243,9 +243,19 @@ async function sync($: Dollar, force = false): Promise<string> {
       skills = undefined
     }
   }
+  // Usage counts are small, so they go up with every sync; before any use, the task history stands in.
+  const savedUse = await $.store.get('skillUse')
+  const skillUse: Record<string, number> = {}
+
+  if (savedUse !== null && typeof savedUse === 'object') {
+    Object.assign(skillUse, savedUse as Record<string, number>)
+  } else {
+    s.history.forEach(t => t.skills.forEach(k => { skillUse[k] = (skillUse[k] ?? 0) + 1 }))
+  }
   const body = JSON.stringify({
     deviceKey,
     skills,
+    skillUse,
     link: typeof link === 'string' ? link : '',
     snapshot: {
       ...s,
@@ -464,6 +474,18 @@ export const register: Register = on => {
         ? s
         : { ...s, task: { ...s.task, skills: [...s.task.skills, e.skill] } },
     )
+    // Times each skill was used, kept across sessions; the first count starts from the task history.
+    const saved = await $.store.get('skillUse')
+    const use: Record<string, number> = {}
+
+    if (saved !== null && typeof saved === 'object') {
+      Object.assign(use, saved as Record<string, number>)
+    } else {
+      const s = await read($, snap)
+      s.history.forEach(t => t.skills.forEach(k => { use[k] = (use[k] ?? 0) + 1 }))
+    }
+    use[e.skill] = (use[e.skill] ?? 0) + 1
+    await $.store.set('skillUse', use)
     isDirty = true
 
     return next(e)
