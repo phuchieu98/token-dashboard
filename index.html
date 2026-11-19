@@ -11,6 +11,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Token Dashboard</title>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
   :root {
     --bg: #120f24; --card: #1b1634; --line: #2c2550; --text: #f2efff; --muted: #a59dcb;
@@ -767,7 +768,9 @@
 </div>
 
 <script>
-  var APP_VERSION = '1.5.4';
+  var APP_VERSION = '1.5.5';
+  // Google sign-in popup (works with several Google accounts in one browser).
+  var GOOGLE_CLIENT_ID = '1082362062556-9evscenk845fvsqm2hog1uhqo5ejr66s.apps.googleusercontent.com';
   var DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyaEk748hcksVZaCfKTFNob-CobtzDm_6QTmqrarxqq2qw7CT1DQMLtK9P1Q5MyiSb5/exec';
   // The same Apps Script deployed a second time as "Execute as: User accessing" — it reads the visitor's Google account.
   var DEFAULT_LOGIN_URL = 'https://script.google.com/macros/s/AKfycbxfSbGgeKFixSZXJ4mLa0AW-fI3I-MHE2OkKseFWk3PlGD7pTzZY7gFZPQjyvtGtT7O/exec';
@@ -829,7 +832,39 @@
     store('td.token', token); store('td.view', '');
   }
   function loginUrl() { return store('td.loginUrl') || DEFAULT_LOGIN_URL; }
+  var gisClient = null;
+  function googleNote(t) { $('loginNote').textContent = t; $('loginNote2').textContent = t; }
+  function onGoogleToken(resp) {
+    if (!resp || !resp.access_token) { googleNote('Không đăng nhập được bằng Google.'); return; }
+    googleNote('Đang đăng nhập Google…');
+    api({ action: 'google', accessToken: resp.access_token })
+      .then(function (res) {
+        if (!res.ok) { googleNote('Không đăng nhập được bằng Google (' + (res.error || 'lỗi') + ').'); return; }
+        addSession(res.email, res.token, 'google');
+        $('loginPrompt').hidden = true;
+        clearView(); load(); go('accounts');
+        googleNote('Đã đăng nhập Google: ' + res.email + '. Giờ hãy liên kết tài khoản Claude.');
+      })
+      .catch(function () { googleNote('Không kết nối được máy chủ.'); });
+  }
   function googleSignIn(chooseAnother) {
+    // Preferred: Google's own account chooser in a popup; the server checks the token.
+    if (window.google && google.accounts && google.accounts.oauth2) {
+      if (!gisClient) {
+        gisClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email',
+          callback: onGoogleToken,
+          error_callback: function (err) {
+            googleNote(err && err.type === 'popup_closed' ? 'Đã đóng cửa sổ đăng nhập Google.'
+              : 'Trình duyệt chặn cửa sổ đăng nhập Google. Hãy cho phép cửa sổ bật lên (popup) rồi thử lại.');
+          },
+        });
+      }
+      gisClient.requestAccessToken({ prompt: 'select_account' });
+      return;
+    }
+    // Fallback when Google's script did not load: the Apps Script sign-in page.
     var url = loginUrl();
     if (!url || url.indexOf('__') === 0) { $('loginNote').textContent = 'Chưa cấu hình trang đăng nhập Google.'; go('accounts'); return; }
     var target = url + (url.indexOf('?') < 0 ? '?' : '&') + 'login=1&back=' + encodeURIComponent(location.origin + location.pathname);

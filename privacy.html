@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quyền riêng tư</title>
+<link rel="icon" href="icon-192.png">
+<style>
+  :root { --bg: #120f24; --card: #1c1836; --text: #f2efff; --muted: #a59dcb; --accent: #8b7cff; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f4f2fb; --card: #ffffff; --text: #1d1838; --muted: #5e5880; --accent: #6a5af0; } }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 28px 0 6px; }
+  p, li { color: var(--muted); }
+  b { color: var(--text); }
+  a { color: var(--accent); }
+  .card { background: var(--card); border-radius: 16px; padding: 4px 20px 16px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chính sách quyền riêng tư</h1>
+  <p>Token Dashboard · cập nhật 19/11/2026</p>
+  <div class="card">
+    <h2>App thu thập gì</h2>
+    <ul>
+      <li><b>Khi đăng nhập bằng Google:</b> chỉ địa chỉ email để nhận ra tài khoản của bạn. App không đọc Gmail, Drive hay dữ liệu Google nào khác.</li>
+      <li><b>Khi đăng nhập bằng tài khoản + mật khẩu:</b> tên tài khoản và mật khẩu đã được băm (không lưu mật khẩu gốc).</li>
+      <li><b>Thông tin bạn tự nhập:</b> tên hiển thị, ảnh đại diện, ngày sinh, số điện thoại (đều không bắt buộc).</li>
+      <li><b>Số liệu từ plugin token-meter:</b> số token, tên skill/tool, thời gian làm việc và 70 ký tự đầu của mỗi yêu cầu (tắt được bằng <code>/token-meter private on</code>). Không gửi mã nguồn hay nội dung trả lời.</li>
+    </ul>
+    <h2>Dùng để làm gì</h2>
+    <p>Chỉ để hiển thị số liệu token của chính bạn trên các thiết bị bạn đăng nhập. Không bán, không chia sẻ, không dùng cho quảng cáo.</p>
+    <h2>Lưu ở đâu</h2>
+    <p>Trên máy chủ Google Apps Script của chủ app. Phiên đăng nhập hết hạn sau 30 ngày.</p>
+    <h2>Xoá dữ liệu</h2>
+    <p>Gỡ liên kết từng tài khoản Claude trong mục <b>Liên kết tài khoản</b>; đăng xuất để xoá phiên. Muốn xoá toàn bộ tài khoản, liên hệ chủ app qua trang <a href="https://github.com/phuchieu98/token-dashboard">GitHub của dự án</a>.</p>
+  </div>
+  <p><a href="./">← Về Token Dashboard</a></p>
+</main>
+</body>
+</html>

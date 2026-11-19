@@ -1,10 +1,8 @@
 {
-  "version": "1.5.4",
-  "date": "2026-11-18",
+  "version": "1.5.5",
+  "date": "2026-11-19",
   "notes": [
-    "Hướng dẫn liên kết tài khoản Claude 4 bước có hình minh hoạ",
-    "Nút mở ứng dụng Claude, Claude trên web và tải Claude ngay trong mục Liên kết",
-    "Cài plugin token-meter từ marketplace phuchieu98/token-dashboard",
-    "Chế độ xem Tất cả: chu kỳ tuần cộng dồn đúng, ghi rõ hạn mức theo tài khoản nào"
+    "Sửa đăng nhập Google trên PC: dùng cửa sổ chọn tài khoản của Google, chạy được khi trình duyệt đăng nhập nhiều tài khoản Google",
+    "Thêm trang Chính sách quyền riêng tư"
   ]
 }
